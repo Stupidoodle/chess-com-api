@@ -7,11 +7,7 @@ import aiohttp
 import pytest
 
 from chess_com_api.client import ChessComClient
-from chess_com_api.exceptions import (
-    ChessComAPIError,
-    NotFoundError,
-    RateLimitError,
-)
+from chess_com_api.exceptions import ChessComAPIError, NotFoundError, RateLimitError
 from chess_com_api.models import ClubMatches, Country
 
 

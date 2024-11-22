@@ -8,9 +8,7 @@ from datetime import datetime
 import pytest
 
 from chess_com_api.client import ChessComClient
-from chess_com_api.exceptions import (
-    NotFoundError,
-)
+from chess_com_api.exceptions import NotFoundError
 from chess_com_api.models import (
     BoardGame,
     Club,
