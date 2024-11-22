@@ -9,7 +9,15 @@ import pytest
 
 from chess_com_api.client import ChessComClient
 from chess_com_api.exceptions import *
-from chess_com_api.models import PlayerMatches, PlayerTournaments, Game, Club, BoardGame, Round, Group
+from chess_com_api.models import (
+    PlayerMatches,
+    PlayerTournaments,
+    Game,
+    Club,
+    BoardGame,
+    Round,
+    Group,
+)
 
 
 def get_file_hash(file_path, hash_algorithm="sha256"):
@@ -79,7 +87,10 @@ async def test_download_monthly_pgn(client):
     """Test downloading monthly PGN."""
     await client.download_archived_games_pgn("test_file.pgn", "erik", 2009, 10)
     print(get_file_hash("test_file.pgn"))
-    assert get_file_hash("test_file.pgn") == "436c21bd6fdd07844e0227754190a207a64cf908b6508fffd7f4a52354949377"
+    assert (
+        get_file_hash("test_file.pgn")
+        == "436c21bd6fdd07844e0227754190a207a64cf908b6508fffd7f4a52354949377"
+    )
     os.remove("test_file.pgn")
 
 
@@ -127,7 +138,7 @@ async def test_get_player_current_games(client):
     games = await client.get_player_current_games("erik")
     assert isinstance(games, list)
     if games:
-        assert all(hasattr(g, 'url') for g in games)
+        assert all(hasattr(g, "url") for g in games)
 
 
 @pytest.mark.asyncio
@@ -144,7 +155,7 @@ async def test_get_archived_games(client):
     games = await client.get_archived_games("hikaru", 2023, 12)
     assert isinstance(games, list)
     if games:
-        assert all(hasattr(g, 'url') for g in games)
+        assert all(hasattr(g, "url") for g in games)
 
 
 @pytest.mark.asyncio
@@ -153,7 +164,7 @@ async def test_get_player_clubs(client):
     clubs = await client.get_player_clubs("erik")
     assert isinstance(clubs, list)
     if clubs:
-        assert all(hasattr(c, 'name') for c in clubs)
+        assert all(hasattr(c, "name") for c in clubs)
 
 
 @pytest.mark.asyncio
@@ -189,7 +200,9 @@ async def test_tournament_round(client):
 @pytest.mark.asyncio
 async def test_tournament_round_group(client):
     tournament_id = "-33rd-chesscom-quick-knockouts-1401-1600"
-    tournament_round_group = await client.get_tournament_round_group(tournament_id, 1, 1)
+    tournament_round_group = await client.get_tournament_round_group(
+        tournament_id, 1, 1
+    )
     assert len(tournament_round_group.games) > 0
     assert isinstance(tournament_round_group.games[0], Game)
 
@@ -206,8 +219,8 @@ async def test_get_match(client):
     await match.boards[0].games[0].white.fetch_user(client=client)
     await match.boards[0].games[0].black.fetch_user(client=client)
     assert (
-            match.boards[0].games[0].white.username == "sorinel"
-            and match.boards[0].games[0].black.username == "Kllr"
+        match.boards[0].games[0].white.username == "sorinel"
+        and match.boards[0].games[0].black.username == "Kllr"
     )
     assert match.boards[0].games[0].white.user == await client.get_player("sorinel")
     assert match.boards[0].games[0].black.user == await client.get_player("Kllr")
@@ -226,8 +239,8 @@ async def test_get_match_board(client):
     await board.games[0].white.fetch_user(client=client)
     await board.games[0].black.fetch_user(client=client)
     assert (
-            board.games[0].white.username == "sorinel"
-            and board.games[0].black.username == "Kllr"
+        board.games[0].white.username == "sorinel"
+        and board.games[0].black.username == "Kllr"
     )
     assert board.games[0].white.user == await client.get_player("sorinel")
     assert board.games[0].black.user == await client.get_player("Kllr")
@@ -284,16 +297,16 @@ async def test_get_streamers(client):
     streamers = await client.get_streamers()
     assert isinstance(streamers, list)
     if streamers:
-        assert all(hasattr(s, 'username') for s in streamers)
+        assert all(hasattr(s, "username") for s in streamers)
 
 
 @pytest.mark.asyncio
 async def test_get_leaderboards(client):
     """Test getting leaderboards."""
     leaderboards = await client.get_leaderboards()
-    assert hasattr(leaderboards, 'daily')
-    assert hasattr(leaderboards, 'live_blitz')
-    assert hasattr(leaderboards, 'tactics')
+    assert hasattr(leaderboards, "daily")
+    assert hasattr(leaderboards, "live_blitz")
+    assert hasattr(leaderboards, "tactics")
 
 
 @pytest.mark.asyncio

@@ -14,11 +14,11 @@ class ChessComClient:
     BASE_URL = "https://api.chess.com/pub"
 
     def __init__(
-            self,
-            session: Optional[aiohttp.ClientSession] = None,
-            timeout: int = 30,
-            max_retries: int = 3,
-            rate_limit: int = 300
+        self,
+        session: Optional[aiohttp.ClientSession] = None,
+        timeout: int = 30,
+        max_retries: int = 3,
+        rate_limit: int = 300,
     ):
         """Initialize the Chess.com API client."""
         self.timeout = aiohttp.ClientTimeout(total=timeout)
@@ -27,7 +27,7 @@ class ChessComClient:
         self._rate_limit = asyncio.Semaphore(rate_limit)
         self._headers = {
             "Accept": "application/json",
-            "User-Agent": "ChessComAPI-Python/2.0"
+            "User-Agent": "ChessComAPI-Python/2.0",
         }
 
     async def close(self):
@@ -35,10 +35,10 @@ class ChessComClient:
         await self.session.close()
 
     async def _make_request(
-            self,
-            endpoint: str,
-            params: Optional[Dict] = None,
-            bytestream: Optional[bool] = False,
+        self,
+        endpoint: str,
+        params: Optional[Dict] = None,
+        bytestream: Optional[bool] = False,
     ) -> Dict | bytes:
         url = f"{self.BASE_URL}{endpoint}"
         retry_intervals = [0.05, 0.1, 0.2, 0.5, 1.0, 2.0]  # Adaptive retry intervals
@@ -47,48 +47,66 @@ class ChessComClient:
             for attempt in range(self.max_retries):
                 try:
                     async with self.session.get(
-                            url, params=params, headers=self._headers, timeout=self.timeout
+                        url, params=params, headers=self._headers, timeout=self.timeout
                     ) as response:
                         if response.status == 200:
-                            return await response.json() if not bytestream else await response.content.read()
+                            return (
+                                await response.json()
+                                if not bytestream
+                                else await response.content.read()
+                            )
 
                         if response.status == 429:  # Rate limit hit
-                            retry_time = retry_intervals[min(attempt, len(retry_intervals) - 1)]
-                            print(f"Rate limit hit. Retrying in {retry_time:.2f} seconds...")
+                            retry_time = retry_intervals[
+                                min(attempt, len(retry_intervals) - 1)
+                            ]
+                            print(
+                                f"Rate limit hit. Retrying in {retry_time:.2f} seconds..."
+                            )
                             await asyncio.sleep(retry_time)
                             continue  # Retry after backoff
 
                         if response.status == 404:
                             data = await response.json()
-                            raise NotFoundError(f"Resource not found: {data.get('message', 'Unknown error')}")
+                            raise NotFoundError(
+                                f"Resource not found: {data.get('message', 'Unknown error')}"
+                            )
 
                         if response.status in (301, 304):
-                            raise RedirectError(f"Resource moved or not modified: {url}")
+                            raise RedirectError(
+                                f"Resource moved or not modified: {url}"
+                            )
                         if response.status == 410:
                             raise GoneError(f"Resource is no longer available: {url}")
 
                         if 500 <= response.status < 600:  # Server error
-                            backoff_time = min(2 ** attempt, 10)
-                            print(f"Server error {response.status}. Retrying in {backoff_time} seconds...")
+                            backoff_time = min(2**attempt, 10)
+                            print(
+                                f"Server error {response.status}. Retrying in {backoff_time} seconds..."
+                            )
                             await asyncio.sleep(backoff_time)
                             continue
 
-                        raise ChessComAPIError(f"API request failed with status {response.status}")
+                        raise ChessComAPIError(
+                            f"API request failed with status {response.status}"
+                        )
 
                 except NotFoundError:
                     # Do not retry for NotFoundError
                     raise
 
                 except asyncio.TimeoutError:
-                    backoff_time = min(2 ** attempt, 10)
+                    backoff_time = min(2**attempt, 10)
                     print(f"Timeout. Retrying in {backoff_time} seconds...")
                     if attempt == self.max_retries - 1:
                         raise ChessComAPIError("Request timed out")
                     await asyncio.sleep(backoff_time)
 
                 except Exception as e:
-                    backoff_time = min(2 ** attempt, 10)
-                    print(f"Unexpected error: {e}. Retrying in {backoff_time} seconds...")
+                    backoff_time = min(2**attempt, 10)
+                    print(
+                        f"Unexpected error: {e}. Retrying in {backoff_time} seconds..."
+                    )
                     if attempt == self.max_retries - 1:
                         raise ChessComAPIError(f"Request failed after retries: {e}")
                     await asyncio.sleep(backoff_time)
@@ -125,14 +143,20 @@ class ChessComClient:
         data = await self._make_request(f"/player/{username}/games/archives")
         return data["archives"]
 
-    async def get_archived_games(self, username: str, year: int, month: int) -> List[Game]:
+    async def get_archived_games(
+        self, username: str, year: int, month: int
+    ) -> List[Game]:
         """Get player's archived games for a specific month."""
         data = await self._make_request(f"/player/{username}/games/{year}/{month}")
         return [Game.from_dict(game) for game in data["games"]]
 
-    async def download_archived_games_pgn(self, file_name: str, username: str, year: int, month: int) -> None:
+    async def download_archived_games_pgn(
+        self, file_name: str, username: str, year: int, month: int
+    ) -> None:
         """Download player's multi-game PGN for a specific month."""
-        data = await self._make_request(f"/player/{username}/games/{year}/{month}/pgn", bytestream=True)
+        data = await self._make_request(
+            f"/player/{username}/games/{year}/{month}/pgn", bytestream=True
+        )
         with open(file_name, "wb") as f:
             f.write(data)
 
@@ -178,7 +202,9 @@ class ChessComClient:
         data = await self._make_request(f"/tournament/{url_id}/{round_num}")
         return Round.from_dict(data)
 
-    async def get_tournament_round_group(self, url_id: str, round_num: int, group_num: int) -> Group:
+    async def get_tournament_round_group(
+        self, url_id: str, round_num: int, group_num: int
+    ) -> Group:
         """Get tournament round group details."""
         data = await self._make_request(f"/tournament/{url_id}/{round_num}/{group_num}")
         return Group.from_dict(data)

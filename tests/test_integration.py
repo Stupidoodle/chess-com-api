@@ -20,7 +20,9 @@ async def client():
 @pytest.mark.asyncio
 async def test_client_fixture(client):
     assert client is not None
-    assert isinstance(client, ChessComClient), "Fixture did not yield a ChessComClient instance"
+    assert isinstance(
+        client, ChessComClient
+    ), "Fixture did not yield a ChessComClient instance"
 
 
 @pytest.mark.asyncio
@@ -165,44 +167,41 @@ class TestRetryMechanism:
         # Mock the `get` method to fail once and succeed on the second attempt
         mock_response = AsyncMock()
         mock_response.__aenter__.return_value.status = 200
-        mock_response.__aenter__.return_value.json = AsyncMock(return_value={
-            "avatar": "https://images.chesscomfiles.com/uploads/v1/user/15448422.88c010c1.200x200o.3c5619f5441e.png",
-            "player_id": 15448422,
-            "@id": "https://api.chess.com/pub/player/hikaru",
-            "url": "https://www.chess.com/member/Hikaru",
-            "name": "Hikaru Nakamura",
-            "username": "hikaru",
-            "title": "GM",
-            "followers": 1225729,
-            "country": "https://api.chess.com/pub/country/US",
-            "location": "Florida",
-            "last_online": 1732135306,
-            "joined": 1389043258,
-            "status": "premium",
-            "is_streamer": True,
-            "twitch_url": "https://twitch.tv/gmhikaru",
-            "verified": False,
-            "league": "Legend",
-            "streaming_platforms": [
-                {
-                    "type": "twitch",
-                    "channel_url": "https://twitch.tv/gmhikaru"
-                }
-            ]
-        })
+        mock_response.__aenter__.return_value.json = AsyncMock(
+            return_value={
+                "avatar": "https://images.chesscomfiles.com/uploads/v1/user/15448422.88c010c1.200x200o.3c5619f5441e.png",
+                "player_id": 15448422,
+                "@id": "https://api.chess.com/pub/player/hikaru",
+                "url": "https://www.chess.com/member/Hikaru",
+                "name": "Hikaru Nakamura",
+                "username": "hikaru",
+                "title": "GM",
+                "followers": 1225729,
+                "country": "https://api.chess.com/pub/country/US",
+                "location": "Florida",
+                "last_online": 1732135306,
+                "joined": 1389043258,
+                "status": "premium",
+                "is_streamer": True,
+                "twitch_url": "https://twitch.tv/gmhikaru",
+                "verified": False,
+                "league": "Legend",
+                "streaming_platforms": [
+                    {"type": "twitch", "channel_url": "https://twitch.tv/gmhikaru"}
+                ],
+            }
+        )
 
-        mocker.patch.object(client.session, "get", side_effect=[
-            aiohttp.ClientError(),
-            mock_response
-        ])
+        mocker.patch.object(
+            client.session, "get", side_effect=[aiohttp.ClientError(), mock_response]
+        )
 
         result = await client.get_player("hikaru")
         assert result.username == "hikaru"
 
     async def test_max_retries_exceeded(self, client, mocker):
         """Test max retries exceeded."""
-        mocker.patch.object(client.session, 'get',
-                            side_effect=aiohttp.ClientError())
+        mocker.patch.object(client.session, "get", side_effect=aiohttp.ClientError())
 
         with pytest.raises(ChessComAPIError):
             await client.get_player("hikaru")

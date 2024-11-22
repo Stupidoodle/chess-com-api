@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 @dataclass
 class Player:
     """Chess.com player profile."""
+
     username: str
     player_id: int
     title: Optional[str]
@@ -52,23 +53,28 @@ class Player:
             followers=data["followers"],
             is_streamer=data.get("is_streamer", False),
             twitch_url=data.get("twitch_url"),
-            fide=data.get("fide")
+            fide=data.get("fide"),
         )
 
     async def fetch_country(self, client: ChessComClient) -> "Country":
-        self._country = await client.get_country(iso_code=self.country_url.split("/")[-1])
+        self._country = await client.get_country(
+            iso_code=self.country_url.split("/")[-1]
+        )
         return self._country
 
     @property
     def country(self) -> "Country":
         if self._country is None:
-            raise ValueError("Country has not been fetched. Call `fetch_country` with an API client first.")
+            raise ValueError(
+                "Country has not been fetched. Call `fetch_country` with an API client first."
+            )
         return self._country
 
 
 @dataclass
 class PlayerStats:
     """Player's chess statistics."""
+
     chess_daily: Optional[Dict]
     chess_rapid: Optional[Dict]
     chess_bullet: Optional[Dict]
@@ -88,13 +94,14 @@ class PlayerStats:
             chess960_daily=data.get("chess960_daily"),
             tactics=data.get("tactics"),
             lessons=data.get("lessons"),
-            puzzle_rush=data.get("puzzle_rush")
+            puzzle_rush=data.get("puzzle_rush"),
         )
 
 
 @dataclass
 class DailyGame:
     """Chess.com daily game information."""
+
     url: str
     move_by: datetime
     last_activity: datetime
@@ -109,13 +116,14 @@ class DailyGame:
             url=data["url"],
             move_by=datetime.fromtimestamp(data["move_by"]),
             last_activity=datetime.fromtimestamp(data["last_activity"]),
-            draw_offer=False
+            draw_offer=False,
         )
 
 
 @dataclass
 class White:
     """Chess.com white player information."""
+
     rating: int
     result: str
     user_url: str
@@ -130,7 +138,7 @@ class White:
             result=data["result"],
             user_url=data["@id"],
             username=data["username"],
-            uuid=data["uuid"]
+            uuid=data["uuid"],
         )
 
     async def fetch_user(self, client: ChessComClient) -> "Player":
@@ -141,13 +149,16 @@ class White:
     @property
     def user(self) -> "Player":
         if self._user is None:
-            raise ValueError("User has not been fetched. Call `fetch_user` with an API client first.")
+            raise ValueError(
+                "User has not been fetched. Call `fetch_user` with an API client first."
+            )
         return self._user
 
 
 @dataclass
 class Black:
     """Chess.com black player information."""
+
     rating: int
     result: str
     user_url: str
@@ -162,7 +173,7 @@ class Black:
             result=data["result"],
             user_url=data["@id"],
             username=data["username"],
-            uuid=data["uuid"]
+            uuid=data["uuid"],
         )
 
     async def fetch_user(self, client: ChessComClient) -> "Player":
@@ -173,13 +184,16 @@ class Black:
     @property
     def user(self) -> "Player":
         if self._user is None:
-            raise ValueError("User has not been fetched. Call `fetch_user` with an API client first.")
+            raise ValueError(
+                "User has not been fetched. Call `fetch_user` with an API client first."
+            )
         return self._user
 
 
 @dataclass
 class Game:
     """Chess game information."""
+
     white_url: str
     black_url: str
     url: str
@@ -216,7 +230,7 @@ class Game:
             match=data.get("match"),
             eco=data.get("eco"),
             start_time=data.get("start_time"),
-            end_time=data.get("end_time")
+            end_time=data.get("end_time"),
         )
 
     async def fetch_white(self, client: ChessComClient) -> "Player":
@@ -230,19 +244,31 @@ class Game:
     @property
     def white(self) -> "Player":
         if self._white is None:
-            raise ValueError("White player has not been fetched. Call `fetch_white` with an API client first.")
+            raise ValueError(
+                "White player has not been fetched. Call `fetch_white` with an API client first."
+            )
         return self._white
 
     @property
     def black(self) -> "Player":
         if self._black is None:
-            raise ValueError("Black player has not been fetched. Call `fetch_black` with an API client first.")
+            raise ValueError(
+                "Black player has not been fetched. Call `fetch_black` with an API client first."
+            )
         return self._black
 
 
 @dataclass
 class UserClub:
-    def __init__(self, club_id: str, name: str, last_activity: datetime, icon: str, url: str, joined: datetime):
+    def __init__(
+        self,
+        club_id: str,
+        name: str,
+        last_activity: datetime,
+        icon: str,
+        url: str,
+        joined: datetime,
+    ):
         self.club_id = club_id
         self.name = name
         self.last_activity = last_activity
@@ -307,9 +333,7 @@ class CountryClubs:
 
     @classmethod
     def from_dict(cls, data):
-        return cls(
-            club_urls=data["clubs"]
-        )
+        return cls(club_urls=data["clubs"])
 
     async def fetch_clubs(self, client: ChessComClient) -> "List[Club]":
         self._clubs = self._clubs or []
@@ -327,7 +351,9 @@ class CountryClubs:
             except RateLimitError:
                 print(f"Rate limit hit while fetching club {club_id}. Retrying...")
                 await asyncio.sleep(2)  # Retry after fixed backoff
-                return await fetch_club(club_url)  # Retry logic already in `_make_request`
+                return await fetch_club(
+                    club_url
+                )  # Retry logic already in `_make_request`
             except Exception as e:
                 print(f"Error fetching club {club_id}: {e}")
                 return None
@@ -346,7 +372,9 @@ class CountryClubs:
     @property
     def clubs(self) -> "List[Club]":
         if self._clubs is None:
-            raise ValueError("Clubs have not been fetched. Call `fetch_clubs` with an API client first.")
+            raise ValueError(
+                "Clubs have not been fetched. Call `fetch_clubs` with an API client first."
+            )
         return self._clubs
 
 
@@ -359,7 +387,7 @@ class Group:
     def from_dict(cls, data) -> "Group":
         return cls(
             fair_play_removals=data["fair_play_removals"],
-            games=[Game.from_dict(game) for game in data["games"]]
+            games=[Game.from_dict(game) for game in data["games"]],
         )
 
 
@@ -372,10 +400,7 @@ class Round:
 
     @classmethod
     def from_dict(cls, data) -> "Round":
-        return cls(
-            group_urls=data["groups"],
-            players=data["players"]
-        )
+        return cls(group_urls=data["groups"], players=data["players"])
 
     async def fetch_groups(self, client: ChessComClient) -> "List[Group]":
         self._groups = self._groups or []
@@ -407,13 +432,16 @@ class Round:
     @property
     def groups(self) -> "List[Group]":
         if self._groups is None:
-            raise ValueError("Groups have not been fetched. Call `fetch_groups` with an API client first.")
+            raise ValueError(
+                "Groups have not been fetched. Call `fetch_groups` with an API client first."
+            )
         return self._groups
 
 
 @dataclass
 class Tournament:
     """Chess.com tournament information."""
+
     name: str
     url: str
     description: Optional[str]
@@ -436,7 +464,7 @@ class Tournament:
             finish_time=data.get("finish_time"),
             settings=data["settings"],
             players=data["players"],
-            round_urls=data["rounds"]
+            round_urls=data["rounds"],
         )
 
     async def fetch_rounds(self, client: ChessComClient) -> "List[Round]":
@@ -468,13 +496,16 @@ class Tournament:
     @property
     def rounds(self) -> "List[Round]":
         if self._rounds is None:
-            raise ValueError("Rounds have not been fetched. Call `fetch_rounds` with an API client first.")
+            raise ValueError(
+                "Rounds have not been fetched. Call `fetch_rounds` with an API client first."
+            )
         return self._rounds
 
 
 @dataclass
 class BoardGame(Game):
     """Chess.com game information with White and Black objects."""
+
     white: Optional[White] = field(default=None, init=False)
     black: Optional[Black] = field(default=None, init=False)
 
@@ -509,6 +540,7 @@ class BoardGame(Game):
 @dataclass
 class Board:
     """Chess.com board information."""
+
     board_scores: Dict
     games: List[BoardGame]
 
@@ -516,7 +548,7 @@ class Board:
     def from_dict(cls, data: Dict) -> "Board":
         return cls(
             board_scores=data["board_scores"],
-            games=[BoardGame.from_dict(board_game) for board_game in data["games"]]
+            games=[BoardGame.from_dict(board_game) for board_game in data["games"]],
         )
 
 
@@ -529,13 +561,14 @@ class MatchResult:
     def from_dict(cls, data: Dict) -> "MatchResult":
         return cls(
             played_as_white=data.get("played_as_white", None),
-            played_as_black=data.get("played_as_black", None)
+            played_as_black=data.get("played_as_black", None),
         )
 
 
 @dataclass
 class FinishedPlayerMatch:
     """Finished team match information."""
+
     name: str
     url: str
     id: str
@@ -553,7 +586,7 @@ class FinishedPlayerMatch:
             id=data["@id"],
             club_url=data["club"],
             results=MatchResult.from_dict(data["results"]),
-            board_url=data["board"]
+            board_url=data["board"],
         )
 
     async def fetch_club(self, client: ChessComClient) -> "Club":
@@ -564,25 +597,32 @@ class FinishedPlayerMatch:
     @property
     def club(self) -> "Club":
         if self._club is None:
-            raise ValueError("Club has not been fetched. Call `fetch_club` with an API client first.")
+            raise ValueError(
+                "Club has not been fetched. Call `fetch_club` with an API client first."
+            )
         return self._club
 
     async def fetch_board(self, client: ChessComClient) -> "Board":
         if self._board is None:
-            self._board = await client.get_match_board(match_id=int(self.board_url.split("/")[-2]),
-                                                       board_num=int(self.board_url.split("/")[-1]))
+            self._board = await client.get_match_board(
+                match_id=int(self.board_url.split("/")[-2]),
+                board_num=int(self.board_url.split("/")[-1]),
+            )
         return self._board
 
     @property
     def board(self) -> "Board":
         if self._board is None:
-            raise ValueError("Board has not been fetched. Call `fetch_board` with an API client first.")
+            raise ValueError(
+                "Board has not been fetched. Call `fetch_board` with an API client first."
+            )
         return self._board
 
 
 @dataclass
 class InProgressPlayerMatch:
     """In-progress team match information."""
+
     name: str
     url: str
     id: str
@@ -600,7 +640,7 @@ class InProgressPlayerMatch:
             id=data["@id"],
             club_url=data["club"],
             results=MatchResult.from_dict(data["results"]),
-            board_url=data["board"]
+            board_url=data["board"],
         )
 
     async def fetch_club(self, client: ChessComClient) -> "Club":
@@ -611,25 +651,32 @@ class InProgressPlayerMatch:
     @property
     def club(self) -> "Club":
         if self._club is None:
-            raise ValueError("Club has not been fetched. Call `fetch_club` with an API client first.")
+            raise ValueError(
+                "Club has not been fetched. Call `fetch_club` with an API client first."
+            )
         return self._club
 
     async def fetch_board(self, client: ChessComClient) -> "Board":
         if self._board is None:
-            self._board = await client.get_match_board(match_id=int(self.board_url.split("/")[-2]),
-                                                       board_num=int(self.board_url.split("/")[-1]))
+            self._board = await client.get_match_board(
+                match_id=int(self.board_url.split("/")[-2]),
+                board_num=int(self.board_url.split("/")[-1]),
+            )
         return self._board
 
     @property
     def board(self) -> "Board":
         if self._board is None:
-            raise ValueError("Board has not been fetched. Call `fetch_board` with an API client first.")
+            raise ValueError(
+                "Board has not been fetched. Call `fetch_board` with an API client first."
+            )
         return self._board
 
 
 @dataclass
 class RegisteredPlayerMatch:
     """Registered team match information."""
+
     name: str
     url: str
     club_url: str
@@ -643,7 +690,7 @@ class RegisteredPlayerMatch:
             name=data["name"],
             url=data["url"],
             club_url=data["club"],
-            match_url=data["@id"]
+            match_url=data["@id"],
         )
 
     async def fetch_club(self, client: ChessComClient) -> "Club":
@@ -654,18 +701,24 @@ class RegisteredPlayerMatch:
     @property
     def club(self) -> "Club":
         if self._club is None:
-            raise ValueError("Club has not been fetched. Call `fetch_club` with an API client first.")
+            raise ValueError(
+                "Club has not been fetched. Call `fetch_club` with an API client first."
+            )
         return self._club
 
     async def fetch_match(self, client: ChessComClient) -> "Match":
         if self._match is None:
-            self._match = await client.get_match(match_id=int(self.match_url.split("/")[-1]))
+            self._match = await client.get_match(
+                match_id=int(self.match_url.split("/")[-1])
+            )
         return self._match
 
     @property
     def match(self) -> "Match":
         if self._match is None:
-            raise ValueError("Match has not been fetched. Call `fetch_match` with an API client first.")
+            raise ValueError(
+                "Match has not been fetched. Call `fetch_match` with an API client first."
+            )
         return self._match
 
 
@@ -678,18 +731,25 @@ class PlayerMatches:
     @classmethod
     def from_dict(cls, data: Dict) -> "PlayerMatches":
         return cls(
-            finished=[FinishedPlayerMatch.from_dict(finished_player_match) for finished_player_match in
-                      data["finished"]],
-            in_progress=[InProgressPlayerMatch.from_dict(in_progress_player_match) for in_progress_player_match in
-                         data["in_progress"]],
-            registered=[RegisteredPlayerMatch.from_dict(registered_player_match) for registered_player_match in
-                        data["registered"]]
+            finished=[
+                FinishedPlayerMatch.from_dict(finished_player_match)
+                for finished_player_match in data["finished"]
+            ],
+            in_progress=[
+                InProgressPlayerMatch.from_dict(in_progress_player_match)
+                for in_progress_player_match in data["in_progress"]
+            ],
+            registered=[
+                RegisteredPlayerMatch.from_dict(registered_player_match)
+                for registered_player_match in data["registered"]
+            ],
         )
 
 
 @dataclass
 class FinishedPlayerTournament:
     """Finished tournament player information."""
+
     url: str
     tournament_url: str
     _tournament: Optional[Tournament] = field(default=None, init=False, repr=False)
@@ -712,24 +772,29 @@ class FinishedPlayerTournament:
             points_awarded=data.get("points_awarded", 0),
             placement=data["placement"],
             status=data["status"],
-            total_players=data["total_players"]
+            total_players=data["total_players"],
         )
 
     async def fetch_tournament(self, client: ChessComClient) -> "Tournament":
         if self._tournament is None:
-            self._tournament = await client.get_tournament(url_id=self.tournament_url.split("/")[-1])
+            self._tournament = await client.get_tournament(
+                url_id=self.tournament_url.split("/")[-1]
+            )
         return self._tournament
 
     @property
     def tournament(self) -> "Tournament":
         if self._tournament is None:
-            raise ValueError("Tournament has not been fetched. Call `fetch_tournament` with an API client first.")
+            raise ValueError(
+                "Tournament has not been fetched. Call `fetch_tournament` with an API client first."
+            )
         return self._tournament
 
 
 @dataclass
 class InProgressPlayerTournament:
     """In-progress tournament player information."""
+
     url: str
     tournament_url: str
     _tournament: Optional[Tournament] = field(default=None, init=False, repr=False)
@@ -748,24 +813,29 @@ class InProgressPlayerTournament:
             losses=data["losses"],
             draws=data["draws"],
             status=data["status"],
-            total_players=data["total_players"]
+            total_players=data["total_players"],
         )
 
     async def fetch_tournament(self, client: ChessComClient) -> "Tournament":
         if self._tournament is None:
-            self._tournament = await client.get_tournament(url_id=self.tournament_url.split("/")[-1])
+            self._tournament = await client.get_tournament(
+                url_id=self.tournament_url.split("/")[-1]
+            )
         return self._tournament
 
     @property
     def tournament(self) -> "Tournament":
         if self._tournament is None:
-            raise ValueError("Tournament has not been fetched. Call `fetch_tournament` with an API client first.")
+            raise ValueError(
+                "Tournament has not been fetched. Call `fetch_tournament` with an API client first."
+            )
         return self._tournament
 
 
 @dataclass
 class RegisteredPlayerTournament:
     """Registered tournament player information."""
+
     url: str
     tournament_url: str
     _tournament: Optional[Tournament] = field(default=None, init=False, repr=False)
@@ -773,27 +843,28 @@ class RegisteredPlayerTournament:
 
     @classmethod
     def from_dict(cls, data: Dict) -> "RegisteredPlayerTournament":
-        return cls(
-            url=data["url"],
-            tournament_url=data["@id"],
-            status=data["status"]
-        )
+        return cls(url=data["url"], tournament_url=data["@id"], status=data["status"])
 
     async def fetch_tournament(self, client: ChessComClient) -> "Tournament":
         if self._tournament is None:
-            self._tournament = await client.get_tournament(url_id=self.tournament_url.split("/")[-1])
+            self._tournament = await client.get_tournament(
+                url_id=self.tournament_url.split("/")[-1]
+            )
         return self._tournament
 
     @property
     def tournament(self) -> "Tournament":
         if self._tournament is None:
-            raise ValueError("Tournament has not been fetched. Call `fetch_tournament` with an API client first.")
+            raise ValueError(
+                "Tournament has not been fetched. Call `fetch_tournament` with an API client first."
+            )
         return self._tournament
 
 
 @dataclass
 class PlayerTournaments:
     """Chess.com player tournaments information."""
+
     finished: List[FinishedPlayerTournament]
     in_progress: List[InProgressPlayerTournament]
     registered: List[RegisteredPlayerTournament]
@@ -801,19 +872,25 @@ class PlayerTournaments:
     @classmethod
     def from_dict(cls, data) -> "PlayerTournaments":
         return cls(
-            finished=[FinishedPlayerTournament.from_dict(finished_player_tournament) for finished_player_tournament in
-                      data["finished"]],
-            in_progress=[InProgressPlayerTournament.from_dict(in_progress_player_tournament) for
-                         in_progress_player_tournament in data["in_progress"]],
-            registered=[RegisteredPlayerTournament.from_dict(registered_player_tournament) for
-                        registered_player_tournament in
-                        data["registered"]]
+            finished=[
+                FinishedPlayerTournament.from_dict(finished_player_tournament)
+                for finished_player_tournament in data["finished"]
+            ],
+            in_progress=[
+                InProgressPlayerTournament.from_dict(in_progress_player_tournament)
+                for in_progress_player_tournament in data["in_progress"]
+            ],
+            registered=[
+                RegisteredPlayerTournament.from_dict(registered_player_tournament)
+                for registered_player_tournament in data["registered"]
+            ],
         )
 
 
 @dataclass
 class FinishedClubMatch:
     """Finished club match information."""
+
     name: str
     match_url: str
     _match: Optional[Match] = field(default=None, init=False, repr=False)
@@ -831,35 +908,44 @@ class FinishedClubMatch:
             opponent_url=data["opponent"],
             start_time=data["start_time"],
             time_class=data["time_class"],
-            result=data["result"]
+            result=data["result"],
         )
 
     async def fetch_match(self, client: ChessComClient) -> "Match":
         if self._match is None:
-            self._match = await client.get_match(match_id=int(self.match_url.split("/")[-1]))
+            self._match = await client.get_match(
+                match_id=int(self.match_url.split("/")[-1])
+            )
         return self._match
 
     @property
     def match(self) -> "Match":
         if self._match is None:
-            raise ValueError("Match has not been fetched. Call `fetch_match` with an API client first.")
+            raise ValueError(
+                "Match has not been fetched. Call `fetch_match` with an API client first."
+            )
         return self._match
 
     async def fetch_opponent(self, client: ChessComClient) -> "Club":
         if self._opponent is None:
-            self._opponent = await client.get_club(url_id=self.opponent_url.split("/")[-1])
+            self._opponent = await client.get_club(
+                url_id=self.opponent_url.split("/")[-1]
+            )
         return self._opponent
 
     @property
     def opponent(self) -> "Club":
         if self._opponent is None:
-            raise ValueError("Opponent has not been fetched. Call `fetch_opponent` with an API client first.")
+            raise ValueError(
+                "Opponent has not been fetched. Call `fetch_opponent` with an API client first."
+            )
         return self._opponent
 
 
 @dataclass
 class InProgressClubMatch:
     """In-progress club match information."""
+
     name: str
     match_url: str
     _match: Optional[Match] = field(default=None, init=False, repr=False)
@@ -875,35 +961,44 @@ class InProgressClubMatch:
             match_url=data["@id"],
             opponent_url=data["opponent"],
             start_time=data["start_time"],
-            time_class=data["time_class"]
+            time_class=data["time_class"],
         )
 
     async def fetch_match(self, client: ChessComClient) -> "Match":
         if self._match is None:
-            self._match = await client.get_match(match_id=int(self.match_url.split("/")[-1]))
+            self._match = await client.get_match(
+                match_id=int(self.match_url.split("/")[-1])
+            )
         return self._match
 
     @property
     def match(self) -> "Match":
         if self._match is None:
-            raise ValueError("Match has not been fetched. Call `fetch_match` with an API client first.")
+            raise ValueError(
+                "Match has not been fetched. Call `fetch_match` with an API client first."
+            )
         return self._match
 
     async def fetch_opponent(self, client: ChessComClient) -> "Club":
         if self._opponent is None:
-            self._opponent = await client.get_club(url_id=self.opponent_url.split("/")[-1])
+            self._opponent = await client.get_club(
+                url_id=self.opponent_url.split("/")[-1]
+            )
         return self._opponent
 
     @property
     def opponent(self) -> "Club":
         if self._opponent is None:
-            raise ValueError("Opponent has not been fetched. Call `fetch_opponent` with an API client first.")
+            raise ValueError(
+                "Opponent has not been fetched. Call `fetch_opponent` with an API client first."
+            )
         return self._opponent
 
 
 @dataclass
 class RegisteredClubMatch:
     """Registered club match information."""
+
     name: str
     match_url: str
     _match: Optional[Match] = field(default=None, init=False, repr=False)
@@ -917,35 +1012,44 @@ class RegisteredClubMatch:
             name=data["name"],
             match_url=data["@id"],
             opponent_url=data["opponent"],
-            time_class=data["time_class"]
+            time_class=data["time_class"],
         )
 
     async def fetch_match(self, client: ChessComClient) -> "Match":
         if self._match is None:
-            self._match = await client.get_match(match_id=int(self.match_url.split("/")[-1]))
+            self._match = await client.get_match(
+                match_id=int(self.match_url.split("/")[-1])
+            )
         return self._match
 
     @property
     def match(self) -> "Match":
         if self._match is None:
-            raise ValueError("Match has not been fetched. Call `fetch_match` with an API client first.")
+            raise ValueError(
+                "Match has not been fetched. Call `fetch_match` with an API client first."
+            )
         return self._match
 
     async def fetch_opponent(self, client: ChessComClient) -> "Club":
         if self._opponent is None:
-            self._opponent = await client.get_club(url_id=self.opponent_url.split("/")[-1])
+            self._opponent = await client.get_club(
+                url_id=self.opponent_url.split("/")[-1]
+            )
         return self._opponent
 
     @property
     def opponent(self) -> "Club":
         if self._opponent is None:
-            raise ValueError("Opponent has not been fetched. Call `fetch_opponent` with an API client first.")
+            raise ValueError(
+                "Opponent has not been fetched. Call `fetch_opponent` with an API client first."
+            )
         return self._opponent
 
 
 @dataclass
 class ClubMatches:
     """Chess.com club matches information."""
+
     finished: List[FinishedClubMatch]
     in_progress: List[InProgressClubMatch]
     registered: List[RegisteredClubMatch]
@@ -953,18 +1057,25 @@ class ClubMatches:
     @classmethod
     def from_dict(cls, data) -> "ClubMatches":
         return cls(
-            finished=[FinishedClubMatch.from_dict(finished_club_match) for finished_club_match in
-                      data["finished"]],
-            in_progress=[InProgressClubMatch.from_dict(in_progress_club_match) for
-                         in_progress_club_match in data["in_progress"]],
-            registered=[RegisteredClubMatch.from_dict(registered_club_match) for registered_club_match in
-                        data["registered"]]
+            finished=[
+                FinishedClubMatch.from_dict(finished_club_match)
+                for finished_club_match in data["finished"]
+            ],
+            in_progress=[
+                InProgressClubMatch.from_dict(in_progress_club_match)
+                for in_progress_club_match in data["in_progress"]
+            ],
+            registered=[
+                RegisteredClubMatch.from_dict(registered_club_match)
+                for registered_club_match in data["registered"]
+            ],
         )
 
 
 @dataclass
 class Match:
     """Chess.com team match information."""
+
     match_url: str
     name: str
     url: str
@@ -991,7 +1102,7 @@ class Match:
             status=data["status"],
             board_count=data["boards"],
             settings=data["settings"],
-            teams=data["teams"]
+            teams=data["teams"],
         )
 
     async def fetch_boards(self, client: ChessComClient) -> "List[Board]":
@@ -1002,7 +1113,9 @@ class Match:
             if board_num in seen_boards:
                 return None
             try:
-                board = await client.get_match_board(match_id=int(self.match_url.split("/")[-1]), board_num=board_num)
+                board = await client.get_match_board(
+                    match_id=int(self.match_url.split("/")[-1]), board_num=board_num
+                )
                 seen_boards.add(board_num)
                 return board
             except RateLimitError:
@@ -1022,27 +1135,28 @@ class Match:
     @property
     def boards(self) -> "List[Board]":
         if self._boards is None:
-            raise ValueError("Boards have not been fetched. Call `fetch_boards` with an API client first.")
+            raise ValueError(
+                "Boards have not been fetched. Call `fetch_boards` with an API client first."
+            )
         return self._boards
 
 
 @dataclass
 class Country:
     """Chess.com country information."""
+
     code: str
     name: str
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Country":
-        return cls(
-            code=data["code"],
-            name=data["name"]
-        )
+        return cls(code=data["code"], name=data["name"])
 
 
 @dataclass
 class DailyPuzzle:
     """Chess.com daily puzzle information."""
+
     title: str
     url: str
     publish_time: int
@@ -1058,13 +1172,14 @@ class DailyPuzzle:
             publish_time=data["publish_time"],
             fen=data["fen"],
             pgn=data["pgn"],
-            image=data["image"]
+            image=data["image"],
         )
 
 
 @dataclass
 class Streamer:
     """Chess.com streamer information."""
+
     username: str
     avatar: str
     twitch_url: str
@@ -1088,16 +1203,19 @@ class Streamer:
                     "stream_url": platform.get("stream_url", ""),
                     "channel_url": platform.get("channel_url", ""),
                     "is_live": platform.get("is_live", False),
-                    "is_main_live_platform": platform.get("is_main_live_platform", False),
+                    "is_main_live_platform": platform.get(
+                        "is_main_live_platform", False
+                    ),
                 }
                 for platform in data.get("platforms", [])  # Iterate through `platforms`
-            ]
+            ],
         )
 
 
 @dataclass
 class LeaderboardEntry:
     """Chess.com leaderboard entry."""
+
     player_id: int
     username: str
     score: int
@@ -1111,13 +1229,14 @@ class LeaderboardEntry:
             username=data["username"],
             score=data["score"],
             rank=data["rank"],
-            url=data["url"]
+            url=data["url"],
         )
 
 
 @dataclass
 class Leaderboard:
     """Chess.com complete leaderboard."""
+
     daily: List[LeaderboardEntry]
     daily960: List[LeaderboardEntry]
     live_rapid: List[LeaderboardEntry]
@@ -1134,16 +1253,48 @@ class Leaderboard:
     @classmethod
     def from_dict(cls, data: Dict) -> "Leaderboard":
         return cls(
-            daily=[LeaderboardEntry.from_dict(entry) for entry in data.get("daily", [])],
-            daily960=[LeaderboardEntry.from_dict(entry) for entry in data.get("daily960", [])],
-            live_rapid=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_rapid", [])],
-            live_blitz=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_blitz", [])],
-            live_bullet=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_bullet", [])],
-            live_bughouse=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_bughouse", [])],
-            live_blitz960=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_blitz960", [])],
-            live_threecheck=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_threecheck", [])],
-            live_crazyhouse=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_crazyhouse", [])],
-            live_kingofthehill=[LeaderboardEntry.from_dict(entry) for entry in data.get("live_kingofthehill", [])],
-            lessons=[LeaderboardEntry.from_dict(entry) for entry in data.get("lessons", [])],
-            tactics=[LeaderboardEntry.from_dict(entry) for entry in data.get("tactics", [])]
+            daily=[
+                LeaderboardEntry.from_dict(entry) for entry in data.get("daily", [])
+            ],
+            daily960=[
+                LeaderboardEntry.from_dict(entry) for entry in data.get("daily960", [])
+            ],
+            live_rapid=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_rapid", [])
+            ],
+            live_blitz=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_blitz", [])
+            ],
+            live_bullet=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_bullet", [])
+            ],
+            live_bughouse=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_bughouse", [])
+            ],
+            live_blitz960=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_blitz960", [])
+            ],
+            live_threecheck=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_threecheck", [])
+            ],
+            live_crazyhouse=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_crazyhouse", [])
+            ],
+            live_kingofthehill=[
+                LeaderboardEntry.from_dict(entry)
+                for entry in data.get("live_kingofthehill", [])
+            ],
+            lessons=[
+                LeaderboardEntry.from_dict(entry) for entry in data.get("lessons", [])
+            ],
+            tactics=[
+                LeaderboardEntry.from_dict(entry) for entry in data.get("tactics", [])
+            ],
         )

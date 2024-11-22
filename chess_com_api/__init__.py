@@ -63,7 +63,7 @@ __all__ = [
     "Club",
     "Country",
     "DailyGame",
-    "DailyPuzzle", 
+    "DailyPuzzle",
     "Game",
     "Leaderboard",
     "Match",
