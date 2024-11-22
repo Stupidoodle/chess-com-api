@@ -1,0 +1,119 @@
+/* Custom styles for documentation */
+
+/* Improve code block readability */
+.highlight {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+[data-md-color-scheme="slate"] .highlight {
+    background: #1e2129;
+}
+
+/* Make important notes stand out */
+.admonition.important {
+    border-left-color: #ff6e42;
+}
+
+.admonition.important .admonition-title {
+    background-color: rgba(255, 110, 66, 0.1);
+}
+
+.admonition.important .admonition-title::before {
+    background-color: #ff6e42;
+}
+
+/* Custom class for Chess.com styled elements */
+.chess-com-api {
+    border-left: 4px solid #7fa650;
+    padding: 1em;
+    margin: 1em 0;
+    background: rgba(127, 166, 80, 0.1);
+}
+
+/* Improve table readability */
+.md-typeset table:not([class]) {
+    font-size: .75rem;
+}
+
+.md-typeset table:not([class]) td,
+.md-typeset table:not([class]) th {
+    padding: 0.5em 1em;
+}
+
+/* Custom class for endpoint documentation */
+.endpoint {
+    border: 1px solid rgba(127, 166, 80, 0.2);
+    border-radius: 4px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.endpoint .method {
+    font-weight: bold;
+    color: #7fa650;
+}
+
+.endpoint .path {
+    font-family: monospace;
+    background: rgba(127, 166, 80, 0.1);
+    padding: 0.2em 0.4em;
+    border-radius: 2px;
+}
+
+/* Improve annotation readability */
+.doc-label {
+    padding: 0.2em 0.6em;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+    vertical-align: middle;
+    margin-left: 0.5em;
+}
+
+.doc-label.required {
+    background-color: #ff6e42;
+    color: white;
+}
+
+.doc-label.optional {
+    background-color: #7fa650;
+    color: white;
+}
+
+/* Versioning styles */
+.version-selector {
+    padding: 0.2em 0.6em;
+    border-radius: 4px;
+    background-color: rgba(127, 166, 80, 0.1);
+    margin-bottom: 1em;
+}
+
+/* Code annotation improvements */
+.highlight .k {
+    color: #7fa650 !important;
+}
+
+.highlight .s {
+    color: #ff6e42 !important;
+}
+
+/* Mobile improvements */
+@media screen and (max-width: 76.1875em) {
+    .md-nav--primary .md-nav__title {
+        background-color: var(--md-primary-fg-color);
+        color: var(--md-primary-bg-color);
+    }
+}
+
+/* Print improvements */
+@media print {
+    .md-typeset a {
+        color: #000000 !important;
+    }
+
+    .md-content__inner {
+        margin: 0;
+        padding: 1em;
+    }
+}

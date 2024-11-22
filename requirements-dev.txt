@@ -1,0 +1,30 @@
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+coverage>=7.2.0
+tox>=4.0.0
+
+# Linting
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.0.0
+ruff>=0.1.0
+
+# Type checking
+types-aiohttp>=3.8.0
+
+# Documentation
+mkdocs>=1.4.0
+mkdocs-material>=9.0.0
+mkdocstrings[python]>=0.22.0
+
+# Build
+build>=1.0.0
+twine>=4.0.0
+wheel>=0.40.0
+
+# Development
+pre-commit>=3.3.0
+aiohttp>=3.8.0
