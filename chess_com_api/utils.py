@@ -1,4 +1,4 @@
-# chess_com_api/utils.py
+"""Utility functions."""
 
 from datetime import datetime
 from typing import Optional

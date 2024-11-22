@@ -1,6 +1,8 @@
-# tests/test_models.py
+"""Tests for the models module."""
 
-from chess_com_api.models import *
+from datetime import datetime
+
+from chess_com_api.models import Game, Player, PlayerStats
 
 
 def test_player_model():

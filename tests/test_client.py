@@ -1,4 +1,4 @@
-# tests/test_client.py
+"""Tests for the Chess.com API client."""
 
 import asyncio
 import hashlib
@@ -8,21 +8,22 @@ from datetime import datetime
 import pytest
 
 from chess_com_api.client import ChessComClient
-from chess_com_api.exceptions import *
+from chess_com_api.exceptions import (
+    NotFoundError,
+)
 from chess_com_api.models import (
+    BoardGame,
+    Club,
+    Game,
+    Group,
     PlayerMatches,
     PlayerTournaments,
-    Game,
-    Club,
-    BoardGame,
     Round,
-    Group,
 )
 
 
 def get_file_hash(file_path, hash_algorithm="sha256"):
-    """
-    Computes the hash of a file.
+    """Compute the hash of a file.
 
     Args:
         file_path (str): Path to the file.
@@ -30,6 +31,7 @@ def get_file_hash(file_path, hash_algorithm="sha256"):
 
     Returns:
         str: Hexadecimal hash string of the file.
+
     """
     # Create a hash object
     hash_func = getattr(hashlib, hash_algorithm)()
@@ -188,6 +190,7 @@ async def test_get_tournament(client):
 
 @pytest.mark.asyncio
 async def test_tournament_round(client):
+    """Test getting tournament round details."""
     tournament_id = "-33rd-chesscom-quick-knockouts-1401-1600"
     tournament_round = await client.get_tournament_round(tournament_id, 1)
     assert len(tournament_round.players) > 0
@@ -199,6 +202,7 @@ async def test_tournament_round(client):
 
 @pytest.mark.asyncio
 async def test_tournament_round_group(client):
+    """Test getting tournament round group details."""
     tournament_id = "-33rd-chesscom-quick-knockouts-1401-1600"
     tournament_round_group = await client.get_tournament_round_group(
         tournament_id, 1, 1

@@ -1,5 +1,5 @@
-"""
-Chess.com API Client
+"""Chess.com API Client.
+
 ~~~~~~~~~~~~~~~~~~
 
 A modern, fully typed, asynchronous Python wrapper for the Chess.com API.

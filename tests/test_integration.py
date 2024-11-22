@@ -1,4 +1,4 @@
-# tests/test_integration.py
+"""Integration tests for the Chess.com API client."""
 
 import asyncio
 from unittest.mock import AsyncMock
@@ -7,18 +7,39 @@ import aiohttp
 import pytest
 
 from chess_com_api.client import ChessComClient
-from chess_com_api.exceptions import *
+from chess_com_api.exceptions import (
+    ChessComAPIError,
+    NotFoundError,
+    RateLimitError,
+)
 from chess_com_api.models import ClubMatches, Country
 
 
 @pytest.fixture
 async def client():
+    """Create and yield an asynchronous ChessComClient fixture.
+
+    This fixture is used to manage the lifecycle of a ChessComClient instance,
+    ensuring it is properly initialized and closed when tests are executed.
+
+    :return: An instance of ChessComClient.
+    :rtype: ChessComClient
+    """
     async with ChessComClient() as client:
         yield client
 
 
 @pytest.mark.asyncio
 async def test_client_fixture(client):
+    """Test the client fixture for proper instantiation.
+
+    This test verifies that the client fixture is correctly set up and returns an
+    instance of ChessComClient.
+
+    :param client: The client fixture to be tested.
+    :type client: ChessComClient
+    :return: None
+    """
     assert client is not None
     assert isinstance(
         client, ChessComClient
@@ -27,6 +48,15 @@ async def test_client_fixture(client):
 
 @pytest.mark.asyncio
 class TestPlayerEndpoints:
+    """Test endpoints related to players.
+
+    This class contains async test methods to verify the functionality
+    of various player-related API endpoints.
+
+    :ivar client: The API client to interact with player endpoints.
+    :type client: APIClient
+    """
+
     async def test_get_player(self, client):
         """Test getting player profile."""
         player = await client.get_player("hikaru")
@@ -51,6 +81,18 @@ class TestPlayerEndpoints:
 
 @pytest.mark.asyncio
 class TestClubEndpoints:
+    """Class for testing endpoints related to clubs using asynchronous calls.
+
+    This class contains methods to test various endpoints related to clubs. Each test
+    method performs an asynchronous call to the corresponding club endpoint and asserts
+    the validity of the fetched data.
+
+    :ivar attribute1: Description of attribute1.
+    :type attribute1: type
+    :ivar attribute2: Description of attribute2.
+    :type attribute2: type
+    """
+
     async def test_get_club(self, client):
         """Test getting club details."""
         club = await client.get_club("chess-com-developer-community")
@@ -59,7 +101,7 @@ class TestClubEndpoints:
 
     async def test_club_members(self, client):
         """Test getting club members."""
-        members = await client.get_club_members("chess-com-developer-community")
+        members = await client.get_club_members("team-usa")
         assert "weekly" in members
         assert "monthly" in members
         assert "all_time" in members
@@ -87,6 +129,15 @@ class TestClubEndpoints:
 
 @pytest.mark.asyncio
 class TestCountryEndpoints:
+    """Test the endpoints for country-related functionalities in the API.
+
+    This test class includes asynchronous methods to ensure that the country
+    endpoints in the API are functioning correctly. It validates the retrieval of
+    country details and the list of players from a specified country using the
+    provided API client.
+
+    """
+
     async def test_get_country(self, client):
         """Test getting country details."""
         country = await client.get_country("US")
@@ -102,6 +153,15 @@ class TestCountryEndpoints:
 
 @pytest.mark.asyncio
 class TestPuzzleEndpoints:
+    """Test suite for puzzle-related endpoints.
+
+    A set of asynchronous test methods to ensure that puzzle endpoints are
+    functioning as expected.
+
+    :ivar client: The test client to interact with puzzle endpoints.
+    :type client: Any
+    """
+
     async def test_daily_puzzle(self, client):
         """Test getting daily puzzle."""
         puzzle = await client.get_daily_puzzle()
@@ -118,6 +178,15 @@ class TestPuzzleEndpoints:
 
 @pytest.mark.asyncio
 class TestStreamersEndpoint:
+    """Contains test cases for the streamers endpoint.
+
+    This class uses pytest to test the functionality of the streamers endpoint. It
+    verifies that the `get_streamers` method retrieves streamers correctly.
+
+    :ivar client: The HTTP client used to interact with the API.
+    :type client: HttpClient
+    """
+
     async def test_get_streamers(self, client):
         """Test getting Chess.com streamers."""
         streamers = await client.get_streamers()
@@ -128,6 +197,16 @@ class TestStreamersEndpoint:
 
 @pytest.mark.asyncio
 class TestLeaderboardsEndpoint:
+    """Class for testing the Leaderboards endpoint.
+
+    This class contains asynchronous test methods to verify the functionality
+    of the Leaderboards endpoint. It ensures that the endpoint returns valid data
+    for daily, live blitz, and tactics leaderboards.
+
+    :ivar client: The client fixture used for making requests to the endpoint.
+    :type client: TestClient
+    """
+
     async def test_get_leaderboards(self, client):
         """Test getting leaderboards."""
         leaderboards = await client.get_leaderboards()
@@ -138,6 +217,13 @@ class TestLeaderboardsEndpoint:
 
 @pytest.mark.asyncio
 class TestErrorHandling:
+    """Test suite for error handling in client operations.
+
+    This class contains asynchronous tests for handling various errors in client
+    operations. It includes tests for 404 errors, rate limit errors, and input
+    validation errors.
+    """
+
     async def test_not_found(self, client):
         """Test 404 error handling."""
         with pytest.raises(NotFoundError):
@@ -162,6 +248,13 @@ class TestErrorHandling:
 
 @pytest.mark.asyncio
 class TestRetryMechanism:
+    """Test the retry mechanism of the client.
+
+    This class contains tests that verify the client's ability to successfully
+    retry requests upon failure, as well as handling cases where the maximum
+    number of retries is exceeded.
+    """
+
     async def test_retry_success(self, client, mocker):
         """Test successful retry after failure."""
         # Mock the `get` method to fail once and succeed on the second attempt
@@ -209,6 +302,12 @@ class TestRetryMechanism:
 
 @pytest.mark.asyncio
 class TestContextManager:
+    """Represents test cases for the ChessComClient context manager.
+
+    Provides functionality to test that the ChessComClient context manager properly
+    initializes and provides access to client methods within an asynchronous context.
+    """
+
     async def test_context_manager(self):
         """Test client context manager."""
         async with ChessComClient() as client:

@@ -1,11 +1,34 @@
-# chess_com_api/client.py
+"""Asynchronous client for the Chess.com API."""
 
 from __future__ import annotations
 
+import asyncio
+from typing import Dict, List, Optional
+
 import aiohttp
 
-from .exceptions import *
-from .models import *
+from .exceptions import ChessComAPIError, GoneError, NotFoundError, RedirectError
+from .models import (
+    Board,
+    Club,
+    ClubMatches,
+    Country,
+    CountryClubs,
+    DailyGame,
+    DailyPuzzle,
+    Game,
+    Group,
+    Leaderboard,
+    Match,
+    Player,
+    PlayerMatches,
+    PlayerStats,
+    PlayerTournaments,
+    Round,
+    Streamer,
+    Tournament,
+    UserClub,
+)
 
 
 class ChessComClient:
@@ -40,79 +63,103 @@ class ChessComClient:
         params: Optional[Dict] = None,
         bytestream: Optional[bool] = False,
     ) -> Dict | bytes:
-        url = f"{self.BASE_URL}{endpoint}"
-        retry_intervals = [0.05, 0.1, 0.2, 0.5, 1.0, 2.0]  # Adaptive retry intervals
+        """Make an API request to the specified endpoint with retry logic.
 
-        async with self._rate_limit:  # Enforce concurrency
+        :param endpoint: The API endpoint relative to the base URL.
+        :type endpoint: str
+        :param params: Optional parameters to be included in the request.
+        :type params: Optional[Dict]
+        :param bytestream: Flag to determine if the response should be treated as binary
+            data. Default is False.
+        :type bytestream: Optional[bool]
+        :return: The API response, either as a dictionary (if JSON)
+            or as bytes (if bytestream).
+        :rtype: Dict | bytes
+        """
+        url = f"{self.BASE_URL}{endpoint}"
+        retry_intervals = [0.05, 0.1, 0.2, 0.5, 1.0, 2.0]
+
+        async with self._rate_limit:
             for attempt in range(self.max_retries):
                 try:
-                    async with self.session.get(
-                        url, params=params, headers=self._headers, timeout=self.timeout
-                    ) as response:
-                        if response.status == 200:
-                            return (
-                                await response.json()
-                                if not bytestream
-                                else await response.content.read()
-                            )
-
-                        if response.status == 429:  # Rate limit hit
-                            retry_time = retry_intervals[
-                                min(attempt, len(retry_intervals) - 1)
-                            ]
-                            print(
-                                f"Rate limit hit. Retrying in {retry_time:.2f} seconds..."
-                            )
-                            await asyncio.sleep(retry_time)
-                            continue  # Retry after backoff
-
-                        if response.status == 404:
-                            data = await response.json()
-                            raise NotFoundError(
-                                f"Resource not found: {data.get('message', 'Unknown error')}"
-                            )
-
-                        if response.status in (301, 304):
-                            raise RedirectError(
-                                f"Resource moved or not modified: {url}"
-                            )
-                        if response.status == 410:
-                            raise GoneError(f"Resource is no longer available: {url}")
-
-                        if 500 <= response.status < 600:  # Server error
-                            backoff_time = min(2**attempt, 10)
-                            print(
-                                f"Server error {response.status}. Retrying in {backoff_time} seconds..."
-                            )
-                            await asyncio.sleep(backoff_time)
-                            continue
-
-                        raise ChessComAPIError(
-                            f"API request failed with status {response.status}"
-                        )
-
-                except NotFoundError:
-                    # Do not retry for NotFoundError
-                    raise
-
-                except asyncio.TimeoutError:
-                    backoff_time = min(2**attempt, 10)
-                    print(f"Timeout. Retrying in {backoff_time} seconds...")
-                    if attempt == self.max_retries - 1:
-                        raise ChessComAPIError("Request timed out")
-                    await asyncio.sleep(backoff_time)
-
+                    return await self._attempt_request(url, params, bytestream)
+                except (asyncio.TimeoutError, ChessComAPIError) as e:
+                    await self._handle_retry_error(e, attempt, retry_intervals)
                 except Exception as e:
-                    backoff_time = min(2**attempt, 10)
-                    print(
-                        f"Unexpected error: {e}. Retrying in {backoff_time} seconds..."
-                    )
-                    if attempt == self.max_retries - 1:
-                        raise ChessComAPIError(f"Request failed after retries: {e}")
-                    await asyncio.sleep(backoff_time)
+                    await self._handle_unexpected_error(e, attempt, retry_intervals)
+
+    async def _attempt_request(
+        self, url: str, params: Optional[Dict], bytestream: bool
+    ) -> Dict | bytes:
+        """Attempt a single API request."""
+        async with self.session.get(
+            url, params=params, headers=self._headers, timeout=self.timeout
+        ) as response:
+            if response.status == 200:
+                return await self._handle_successful_response(response, bytestream)
+            await self._handle_http_error(response)
+
+    @staticmethod
+    async def _handle_successful_response(response, bytestream: bool) -> Dict | bytes:
+        """Handle a successful HTTP response."""
+        return (
+            await response.json() if not bytestream else await response.content.read()
+        )
+
+    @staticmethod
+    async def _handle_http_error(response):
+        """Handle various HTTP error responses."""
+        if response.status == 429:
+            raise ChessComAPIError("Rate limit hit")
+        if response.status == 404:
+            data = await response.json()
+            raise NotFoundError(
+                f"Resource not found: {data.get('message', 'Unknown error')}"
+            )
+        if response.status in (301, 304):
+            raise RedirectError(f"Resource moved or not modified: {response.url}")
+        if response.status == 410:
+            raise GoneError(f"Resource is no longer available: {response.url}")
+        if 500 <= response.status < 600:
+            raise ChessComAPIError(f"Server error {response.status}")
+
+    async def _handle_retry_error(self, error, attempt: int, retry_intervals: list):
+        """Handle errors that should trigger a retry."""
+        backoff_time = retry_intervals[min(attempt, len(retry_intervals) - 1)]
+        if isinstance(error, asyncio.TimeoutError):
+            print(f"Timeout. Retrying in {backoff_time:.2f} seconds...")
+        else:
+            print(f"{error}. Retrying in {backoff_time:.2f} seconds...")
+        if attempt == self.max_retries - 1:
+            raise ChessComAPIError("Max retries reached") from error
+        if isinstance(error, (GoneError, NotFoundError)):
+            raise error from error
+        await asyncio.sleep(backoff_time)
+
+    async def _handle_unexpected_error(
+        self, error, attempt: int, retry_intervals: list
+    ):
+        """Handle unexpected errors."""
+        backoff_time = retry_intervals[min(attempt, len(retry_intervals) - 1)]
+        print(f"Unexpected error: {error}. Retrying in {backoff_time:.2f} seconds...")
+        if attempt == self.max_retries - 1:
+            raise ChessComAPIError(
+                f"Unexpected error after retries: {error}"
+            ) from error
+        await asyncio.sleep(backoff_time)
 
     # Player endpoints
     async def get_player(self, username: str) -> Player:
+        """Retrieve player information by username.
+
+        This method fetches player data from a remote service and returns a Player
+        instance. It raises a ValueError if the username is empty.
+
+        :param username: The username of the player to retrieve.
+        :type username: str
+        :return: A Player instance containing the player's information.
+        :rtype: Player
+        """
         if not username.strip():
             raise ValueError("Username cannot be empty")
         data = await self._make_request(f"/player/{username}")
@@ -269,7 +316,30 @@ class ChessComClient:
         return Leaderboard.from_dict(data)
 
     async def __aenter__(self):
+        """Enter the asynchronous context.
+
+        This method is used to handle the initialization when entering an asynchronous
+        context using the 'async with' statement. It returns the coroutine object itself
+        for further operations within the context.
+
+        :return: The coroutine object itself for further operations within the context.
+        :rtype: Coroutine
+        """
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Clean up the resources used by the asynchronous context manager.
+
+        This method is called when exiting the async context. It ensures that any
+        resources that were acquired by the context manager are properly released.
+
+        :param exc_type: The exception type if an exception occurred, else None.
+        :type exc_type: type | None
+        :param exc_val: The exception instance if an exception occurred, else None.
+        :type exc_val: BaseException | None
+        :param exc_tb: The traceback if an exception occurred, else None.
+        :type exc_tb: traceback | None
+        :return: False if the exception should be propagated, else None.
+        :rtype: bool | None
+        """
         await self.close()
