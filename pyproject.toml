@@ -96,3 +96,6 @@ lint.ignore = [
 ]
 line-length = 88
 target-version = "py312"
+
+[tool.ruff.format]
+black-ignore = true
