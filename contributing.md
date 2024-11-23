@@ -1,16 +1,22 @@
 # Contributing to Chess.com API Client
 
-First off, thank you for considering contributing to the Chess.com API Client! It's people like you that make this project such a great tool.
+First off, thank you for considering contributing to the Chess.com API Client! It's
+people like you that make this project such a great tool.
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to [bryan.tran.xyz@gmail.com].
+This project and everyone participating in it is governed by our Code of Conduct. By
+participating, you are expected to uphold this code. Please report unacceptable behavior
+to [bryan.tran.xyz@gmail.com].
 
 ## How Can I Contribute?
 
 ### Reporting Bugs
 
-Before creating bug reports, please check [the issue list](https://github.com/Stupidoodle/chess-com-api/issues) as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
+Before creating bug reports, please
+check [the issue list](https://github.com/Stupidoodle/chess-com-api/issues) as you might
+find out that you don't need to create one. When you are creating a bug report, please
+include as many details as possible:
 
 * Use a clear and descriptive title
 * Describe the exact steps which reproduce the problem
@@ -21,7 +27,8 @@ Before creating bug reports, please check [the issue list](https://github.com/St
 
 ### Suggesting Enhancements
 
-Enhancement suggestions are tracked as GitHub issues. Create an issue and provide the following information:
+Enhancement suggestions are tracked as GitHub issues. Create an issue and provide the
+following information:
 
 * Use a clear and descriptive title
 * Provide a step-by-step description of the suggested enhancement
@@ -47,24 +54,24 @@ Enhancement suggestions are tracked as GitHub issues. Create an issue and provid
    ```
 
 3. Make your changes:
-   * Write your code
-   * Add or update tests as needed
-   * Update documentation as needed
+    * Write your code
+    * Add or update tests as needed
+    * Update documentation as needed
 
 4. Follow the coding standards:
-   * Use [Black](https://black.readthedocs.io/) for code formatting
-   * Use [isort](https://pycqa.github.io/isort/) for import sorting
-   * Follow [PEP 484](https://www.python.org/dev/peps/pep-0484/) for type hints
-   * Run the linting tools:
-     ```bash
-     # Format code
-     black .
-     isort .
-
-     # Run linters
-     ruff check .
-     mypy chess_com_api tests
-     ```
+    * Use [Black](https://black.readthedocs.io/) for code formatting
+    * Use [isort](https://pycqa.github.io/isort/) for import sorting
+    * Follow [PEP 484](https://www.python.org/dev/peps/pep-0484/) for type hints
+    * Run the linting tools:
+      ```bash
+      # Format code
+      black .
+      isort .
+ 
+      # Run linters
+      ruff check .
+      mypy chess_com_api tests
+      ```
 
 5. Run the tests:
    ```bash
@@ -72,10 +79,10 @@ Enhancement suggestions are tracked as GitHub issues. Create an issue and provid
    ```
 
 6. Create your Pull Request:
-   * Submit it to the `main` branch
-   * Write a clear title and description
-   * Reference any relevant issues
-   * Make sure all tests pass in CI
+    * Submit it to the `main` branch
+    * Write a clear title and description
+    * Reference any relevant issues
+    * Make sure all tests pass in CI
 
 ## Development Setup
 
@@ -122,7 +129,7 @@ pytest tests/test_client.py::test_get_player
 
 ### Building Documentation
 
-The documentation is built using MkDocs:
+The documentation is built using MkDocs (AI Generated so not accurate):
 
 ```bash
 # Install documentation dependencies
@@ -187,8 +194,10 @@ def function(arg1: str, arg2: int) -> bool:
 
 ## Questions?
 
-Feel free to open an issue or contact the maintainers if you have any questions about contributing.
+Feel free to open an issue or contact the maintainers if you have any questions about
+contributing.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the MIT
+License.
