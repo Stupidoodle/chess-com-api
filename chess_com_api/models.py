@@ -7,14 +7,19 @@ statistics across various chess formats.
 from __future__ import annotations
 
 import asyncio
+import logging
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Union
 
 from chess_com_api.exceptions import RateLimitError
 
 if TYPE_CHECKING:
     from chess_com_api.client import ChessComClient
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -77,7 +82,7 @@ class Player:
     # TODO: Add streaming_platforms
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Player":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Player":
         """Create a Player instance from a dictionary.
 
         This method initializes a new Player object using the provided dictionary data,
@@ -88,22 +93,25 @@ class Player:
         :return: A new Player instance.
         :rtype: Player
         """
-        return cls(
-            username=data["username"],
-            player_id=data["player_id"],
-            title=data.get("title"),
-            status=data["status"],
-            name=data.get("name"),
-            avatar=data.get("avatar"),
-            location=data.get("location"),
-            country_url=data["country"],
-            joined=datetime.fromtimestamp(data["joined"]),
-            last_online=datetime.fromtimestamp(data["last_online"]),
-            followers=data["followers"],
-            is_streamer=data.get("is_streamer", False),
-            twitch_url=data.get("twitch_url"),
-            fide=data.get("fide"),
-        )
+        if isinstance(data, Dict):
+            return cls(
+                username=data["username"],
+                player_id=data["player_id"],
+                title=data.get("title"),
+                status=data["status"],
+                name=data.get("name"),
+                avatar=data.get("avatar"),
+                location=data.get("location"),
+                country_url=data["country"],
+                joined=datetime.fromtimestamp(data["joined"]),
+                last_online=datetime.fromtimestamp(data["last_online"]),
+                followers=data["followers"],
+                is_streamer=data.get("is_streamer", False),
+                twitch_url=data.get("twitch_url"),
+                fide=data.get("fide"),
+            )
+        else:
+            raise ValueError("Invalid input. Expected a dictionary.")
 
     async def fetch_country(self, client: ChessComClient) -> "Country":
         """Fetch country information for the given client.
@@ -169,17 +177,17 @@ class PlayerStats:
     :type puzzle_rush: Optional[Dict]
     """
 
-    chess_daily: Optional[Dict]
-    chess_rapid: Optional[Dict]
-    chess_bullet: Optional[Dict]
-    chess_blitz: Optional[Dict]
-    chess960_daily: Optional[Dict]
-    tactics: Optional[Dict]
-    lessons: Optional[Dict]
-    puzzle_rush: Optional[Dict]
+    chess_daily: Optional[Dict[str, Any]]
+    chess_rapid: Optional[Dict[str, Any]]
+    chess_bullet: Optional[Dict[str, Any]]
+    chess_blitz: Optional[Dict[str, Any]]
+    chess960_daily: Optional[Dict[str, Any]]
+    tactics: Optional[Dict[str, Any]]
+    lessons: Optional[Dict[str, Any]]
+    puzzle_rush: Optional[Dict[str, Any]]
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "PlayerStats":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "PlayerStats":
         """Create a PlayerStats instance from a dictionary.
 
         This method extracts relevant keys from a dictionary to create
@@ -190,16 +198,19 @@ class PlayerStats:
         :return: A PlayerStats instance initialized with the dictionary data.
         :rtype: PlayerStats
         """
-        return cls(
-            chess_daily=data.get("chess_daily"),
-            chess_rapid=data.get("chess_rapid"),
-            chess_bullet=data.get("chess_bullet"),
-            chess_blitz=data.get("chess_blitz"),
-            chess960_daily=data.get("chess960_daily"),
-            tactics=data.get("tactics"),
-            lessons=data.get("lessons"),
-            puzzle_rush=data.get("puzzle_rush"),
-        )
+        if isinstance(data, dict):
+            return cls(
+                chess_daily=data.get("chess_daily"),
+                chess_rapid=data.get("chess_rapid"),
+                chess_bullet=data.get("chess_bullet"),
+                chess_blitz=data.get("chess_blitz"),
+                chess960_daily=data.get("chess960_daily"),
+                tactics=data.get("tactics"),
+                lessons=data.get("lessons"),
+                puzzle_rush=data.get("puzzle_rush"),
+            )
+        else:
+            raise ValueError("Invalid input data. Expected a dictionary.")
 
 
 @dataclass
@@ -226,7 +237,7 @@ class DailyGame:
     draw_offer: Optional[bool] = None
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "DailyGame":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "DailyGame":
         """Create an instance of DailyGame from a dictionary.
 
         This method constructs and returns an instance of DailyGame by parsing the input
@@ -239,15 +250,18 @@ class DailyGame:
         :return: A new instance of DailyGame initialized with the given data.
         :rtype: DailyGame
         """
-        if "draw_offer" in data.keys():
-            if data["move_by"] == 0 or data["draw_offer"]:
-                pass
-        return cls(
-            url=data["url"],
-            move_by=datetime.fromtimestamp(data["move_by"]),
-            last_activity=datetime.fromtimestamp(data["last_activity"]),
-            draw_offer=False,
-        )
+        if isinstance(data, dict):
+            if "draw_offer" in data.keys():
+                if data["move_by"] == 0 or data["draw_offer"]:
+                    pass
+            return cls(
+                url=data["url"],
+                move_by=datetime.fromtimestamp(data["move_by"]),
+                last_activity=datetime.fromtimestamp(data["last_activity"]),
+                draw_offer=False,
+            )
+        else:
+            raise ValueError("Invalid input data. Expected a dictionary.")
 
 
 @dataclass
@@ -279,7 +293,7 @@ class White:
     _user: Optional[Player] = field(default=None, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "White":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "White":
         """Create an instance of the class from a dictionary.
 
         :param data: The dictionary containing the instance data.
@@ -287,13 +301,16 @@ class White:
         :return: An instance of the class with attributes populated from the dictionary.
         :rtype: White
         """
-        return cls(
-            rating=data["rating"],
-            result=data["result"],
-            user_url=data["@id"],
-            username=data["username"],
-            uuid=data["uuid"],
-        )
+        if isinstance(data, dict):
+            return cls(
+                rating=data["rating"],
+                result=data["result"],
+                user_url=data["@id"],
+                username=data["username"],
+                uuid=data["uuid"],
+            )
+        else:
+            raise ValueError("Invalid input data. Expected a dictionary.")
 
     async def fetch_user(self, client: ChessComClient) -> "Player":
         """Fetch user data from the Chess.com API.
@@ -359,7 +376,7 @@ class Black:
     _user: Optional[Player] = field(default=None, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Black":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Black":
         """Create an instance of the class `Black` from a dictionary.
 
         This method initializes a `Black` instance using data from a dictionary. The
@@ -371,13 +388,16 @@ class Black:
         :return: Instance of `Black` initialized with data from the dictionary.
         :rtype: Black
         """
-        return cls(
-            rating=data["rating"],
-            result=data["result"],
-            user_url=data["@id"],
-            username=data["username"],
-            uuid=data["uuid"],
-        )
+        if isinstance(data, dict):
+            return cls(
+                rating=data["rating"],
+                result=data["result"],
+                user_url=data["@id"],
+                username=data["username"],
+                uuid=data["uuid"],
+            )
+        else:
+            raise ValueError("Invalid input data. Expected a dictionary.")
 
     async def fetch_user(self, client: ChessComClient) -> "Player":
         """Fetch user information asynchronously from Chess.com client.
@@ -410,6 +430,7 @@ class Black:
         return self._user
 
 
+# TODO: Update Doc
 @dataclass
 class Game:
     """Represents a chess game and provides methods to interact with game details.
@@ -459,12 +480,11 @@ class Game:
     black_url: str
     url: str
     fen: str
-    pgn: str
     time_control: str
     time_class: str
     rules: str
     rated: bool
-    accuracies: Optional[Dict] = None
+    accuracies: Optional[Dict[str, float]] = None
     tournament: Optional[str] = None
     # TODO: Parse to match
     match: Optional[str] = None
@@ -473,9 +493,14 @@ class Game:
     end_time: Optional[int] = None
     _black: Optional[Player] = field(default=None, init=False, repr=False)
     _white: Optional[Player] = field(default=None, init=False, repr=False)
+    id: Optional[int] = None
+    pgn: Optional[str] = None
+    tcn: Optional[str] = None
+    initial_setup: Optional[str] = None
+    uuid: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Game":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Game":
         """Convert a dictionary to a Game instance.
 
         Detailed description of how this class method converts the provided
@@ -491,23 +516,30 @@ class Game:
          dictionary data.
         :rtype: Game
         """
-        return cls(
-            white_url=data["white"],
-            black_url=data["black"],
-            url=data["url"],
-            fen=data["fen"],
-            pgn=data["pgn"],
-            time_control=data["time_control"],
-            time_class=data["time_class"],
-            rules=data["rules"],
-            rated=data.get("rated", True),
-            accuracies=data.get("accuracies"),
-            tournament=data.get("tournament"),
-            match=data.get("match"),
-            eco=data.get("eco"),
-            start_time=data.get("start_time"),
-            end_time=data.get("end_time"),
-        )
+        if isinstance(data, dict):
+            return cls(
+                white_url=data["white"],
+                black_url=data["black"],
+                url=data["url"],
+                fen=data["fen"],
+                time_control=data["time_control"],
+                time_class=data["time_class"],
+                rules=data["rules"],
+                rated=data.get("rated", False),
+                accuracies=data.get("accuracies"),
+                tournament=data.get("tournament"),
+                match=data.get("match"),
+                eco=data.get("eco"),
+                start_time=data.get("start_time"),
+                end_time=data.get("end_time"),
+                id=int(data["url"].split("/")[-1]),
+                pgn=data.get("pgn"),
+                tcn=data.get("tcn"),
+                initial_setup=data.get("initial_setup"),
+                uuid=data.get("uuid"),
+            )
+        else:
+            raise ValueError("Invalid input data. Expected a dictionary.")
 
     async def fetch_white(self, client: ChessComClient) -> "Player":
         """Fetch the player information for the white player using the provided client.
@@ -524,7 +556,7 @@ class Game:
         self._white = await client.get_player(username=self.white_url.split("/")[-1])
         return self._white
 
-    async def fetch_black(self, client: ChessComClient):
+    async def fetch_black(self, client: ChessComClient) -> "Player":
         """Fetch the black player details asynchronously.
 
         This function fetches the details of the black player by making an asynchronous
@@ -577,6 +609,191 @@ class Game:
                 "client first."
             )
         return self._black
+
+    def __eq__(self, other: Any) -> bool:
+        """Check equality based on game attributes."""
+        if not isinstance(other, Game):
+            return NotImplemented
+        return (
+            self.url == other.url
+            and self.white_url == other.white_url
+            and self.black_url == other.black_url
+            and self.fen == other.fen
+            and self.pgn == other.pgn
+            and self.time_control == other.time_control
+            and self.time_class == other.time_class
+            and self.id == other.id
+        )
+
+    def __hash__(self) -> int:
+        """Generate a hash based on game attributes."""
+        return hash(
+            (
+                self.url,
+                self.white_url,
+                self.black_url,
+                self.fen,
+                self.pgn,
+                self.time_control,
+                self.time_class,
+                self.id,
+            )
+        )
+
+
+@dataclass
+class GameArchive:
+    """Represents a game archive."""
+
+    archive_urls: List[str]
+    username: str
+    _games: Optional[Set[BoardGame]] = field(default=None, init=False)
+    _fetched_archives: Dict[str, List[BoardGame]] = field(
+        default_factory=dict, init=False
+    )
+    _availability_cache: Optional[Dict[int, List[str]]] = field(
+        default=None, init=False
+    )
+
+    @classmethod
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None], username: Optional[str] = None
+    ) -> "GameArchive":
+        """Create an instance of the class from a dictionary."""
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
+        archive_urls = data.get("archives", [])
+        if not isinstance(archive_urls, list):
+            raise ValueError("Invalid input data. Expected a list of archive URLs.")
+        if len(archive_urls) == 0:
+            raise ValueError("Invalid input data. Expected a list of archive URLs.")
+        if username is None:
+            return cls(
+                archive_urls=archive_urls, username=archive_urls[0].split("/")[-4]
+            )
+        else:
+            return cls(archive_urls=archive_urls, username=username)
+
+    def available_archives(self) -> Dict[int, List[str]]:
+        """Return a cached dictionary of available years and months."""
+        if self._availability_cache is None:
+            availability: Dict[int, List[str]] = {}
+            for url in self.archive_urls:
+                match = re.search(r"/games/(\d{4})/(\d{2})", url)
+                if match:
+                    year, month = int(match.group(1)), str(match.group(2))
+                    availability.setdefault(year, []).append(month)
+            self._availability_cache = {
+                year: sorted(months) for year, months in availability.items()
+            }
+        return self._availability_cache
+
+    async def fetch_archive(
+        self, client: ChessComClient, year: int, month: str
+    ) -> List[BoardGame]:
+        """Get a list of games from the archive."""
+        url = f"{client.BASE_URL}/player/" f"{self.username}/games/{year}/{month}"
+        if url in self._fetched_archives:
+            return self._fetched_archives[url]
+        games = await client.get_archived_games(self.username, year=year, month=month)
+        if not isinstance(games, list):
+            raise ValueError("Invalid input data. Expected a list of games.")
+        if self._games is None:
+            # noinspection PyTypeChecker
+            self._games = set(games)
+        self._games.update(games)
+        self._fetched_archives[url] = games
+        return games
+
+    async def fetch_games(
+        self, client: ChessComClient, batch_size: int = 10
+    ) -> Optional[List[Game]]:
+        """Fetch all games from the archive in batches."""
+
+        async def fetch_single_archive(url: str) -> Optional[List[BoardGame]]:
+            match = re.search(r"/games/(\d{4})/(\d{2})", url)
+            if match:
+                year, month = int(match.group(1)), str(match.group(2))
+                return await self.fetch_archive(client, year, month)
+            return []
+
+        # Process archives in batches
+        batches = [
+            self.archive_urls[i : i + batch_size]
+            for i in range(0, len(self.archive_urls), batch_size)
+        ]
+        all_games: List[BoardGame] = []
+        for batch in batches:
+            tasks = [fetch_single_archive(url) for url in batch]
+            batch_results = await asyncio.gather(*tasks)
+            all_games.extend(
+                game for games in batch_results if games is not None for game in games
+            )
+
+        self._games = set(all_games)
+        return list(self._games)
+
+    async def get_game(
+        self,
+        client: ChessComClient,  # Replace Any with ChessComClient
+        game_id: int,
+        year: Optional[int] = None,
+        month: Optional[str] = None,
+    ) -> Optional[Game]:  # Replace Any with Game class
+        """Get a single game from the archive."""
+        await self._fetch_archives_based_on_params(client, year, month)
+
+        if self._games is None:
+            raise ValueError("No games found.")
+        for game in self._games:
+            if game.id == game_id:
+                return game
+        raise ValueError("Game not found.")
+
+    async def _fetch_archives_based_on_params(
+        self,
+        client: ChessComClient,
+        year: Optional[int],
+        month: Optional[str],
+    ) -> None:
+        """Fetch archives based on the year and month parameters."""
+        availability = self.available_archives()
+
+        # Fetch all games if no year and no month are specified
+        if not year and not month:
+            await self.fetch_games(client=client)
+            return
+
+        # Fetch games for a specific month across all years
+        if not year and month:
+            for year, months in availability.items():
+                if month in months:
+                    await self.fetch_archive(client=client, year=year, month=month)
+            return
+
+        # Fetch games for a specific year across all months
+        if year and not month:
+            for month in availability.get(year, []):
+                await self.fetch_archive(client=client, year=year, month=month)
+            return
+
+        # Fetch games for a specific year and month
+        if year and month:
+            await self.fetch_archive(client=client, year=year, month=month)
+            return
+
+        # Raise an error for invalid parameters (shouldn't be reachable)
+        raise ValueError("Invalid parameters for fetching archives.")
+
+    @property
+    def games(self) -> List[Game]:
+        """Return a list of games from the archive."""
+        if self._games is None:
+            raise ValueError(
+                "Games have not been fetched. Call `fetch_archive` or "
+                "`fetch_games` first."
+            )
+        return list(self._games)
 
 
 @dataclass
@@ -633,7 +850,7 @@ class UserClub:
         self.joined = joined
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "UserClub":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "UserClub":
         """Create an instance of UserClub from a dictionary.
 
         This class method takes a dictionary containing club data and returns an
@@ -645,6 +862,8 @@ class UserClub:
          from the dictionary data.
         :rtype: UserClub
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             club_id=data.get("@id", ""),  # Use "@id" for the unique identifier
             name=data.get("name", ""),
@@ -709,7 +928,7 @@ class Club:
     url: str = ""
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Club":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Club":
         """Create an instance of Club from a dictionary.
 
         Given a dictionary with keys and values corresponding to attributes of the
@@ -721,6 +940,8 @@ class Club:
         :return: A new instance of Club.
         :rtype: Club
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             id=data.get("@id", ""),
             name=data.get("name", ""),
@@ -759,7 +980,7 @@ class CountryClubs:
     _clubs: Optional[List["Club"]] = field(default=None, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "CountryClubs":
         """Create an instance of the class from a dictionary.
 
         This method allows initializing the class with data provided in a dictionary
@@ -771,6 +992,8 @@ class CountryClubs:
         :return: An instance of the class initialized with the provided data.
         :rtype: cls
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(club_urls=data["clubs"])
 
     async def fetch_clubs(self, client: ChessComClient) -> "List[Club]":
@@ -787,16 +1010,17 @@ class CountryClubs:
         :rtype: List[Club]
         """
         self._clubs = self._clubs or []
-        seen_club_ids = set(self._clubs)
+        seen_club_ids = {club.id.split("/")[-1] for club in self._clubs}
 
-        async def fetch_club(club_url):
+        async def fetch_club(club_url: str) -> Optional[Club]:
             club_id = club_url.split("/")[-1]
             if club_id in seen_club_ids:
                 return None  # Skip already fetched clubs
             try:
                 print(f"Fetching club with ID: {club_id}")
                 club = await client.get_club(url_id=club_id)
-                seen_club_ids.add(club_id)
+                if club:
+                    seen_club_ids.add(club.id.split("/")[-1])
                 return club
             except RateLimitError:
                 print(f"Rate limit hit while fetching club {club_id}. Retrying...")
@@ -814,8 +1038,9 @@ class CountryClubs:
 
         # Add unique clubs to `_clubs`
         for club in filter(None, fetched_clubs):  # Filter out None values and errors
-            print(f"Fetched club: {club.name}")
-            self._clubs.append(club)
+            if isinstance(club, Club):
+                print(f"Fetched club: {club.name}")
+                self._clubs.append(club)
 
         return self._clubs
 
@@ -856,7 +1081,7 @@ class Group:
     games: List[Game]
 
     @classmethod
-    def from_dict(cls, data) -> "Group":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Group":
         """Create a Group instance from a dictionary.
 
         This method takes a dictionary representation of a Group and returns
@@ -868,10 +1093,25 @@ class Group:
         :return: A new Group instance.
         :rtype: Group
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             fair_play_removals=data["fair_play_removals"],
             games=[Game.from_dict(game) for game in data["games"]],
         )
+
+    def __eq__(self, other: Any) -> bool:
+        """Check equality based on games and fair play removals."""
+        if not isinstance(other, Group):
+            return NotImplemented
+        return (
+            self.fair_play_removals == other.fair_play_removals
+            and self.games == other.games
+        )
+
+    def __hash__(self) -> int:
+        """Generate a hash based on fair play removals and games."""
+        return hash((tuple(self.fair_play_removals), tuple(self.games)))
 
 
 # TODO: We might want to rename this
@@ -895,9 +1135,10 @@ class Round:
     group_urls: List[str]
     _groups: Optional[List[Group]] = field(default=None, init=False, repr=False)
     players: List[Dict[str, str]]
+    _seen_group_urls: set[tuple[str, int, int]] = field(default_factory=set)
 
     @classmethod
-    def from_dict(cls, data) -> "Round":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Round":
         """Create an instance of the `Round` class from a dictionary.
 
         :param data: The dictionary containing group URLs and players.
@@ -905,6 +1146,8 @@ class Round:
         :return: An instance of the `Round` class.
         :rtype: Round
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(group_urls=data["groups"], players=data["players"])
 
     async def fetch_groups(self, client: ChessComClient) -> "List[Group]":
@@ -921,16 +1164,16 @@ class Round:
         :rtype: List[Group]
         """
         self._groups = self._groups or []
-        seen_groups = set(self._groups)
+        self._seen_group_urls = self._seen_group_urls or set()
 
-        async def fetch_group(group_url):
+        async def fetch_group(group_url: str) -> Optional["Group"]:
             parts = group_url.split("/")[-3:]
             group_id = (parts[0], int(parts[1]), int(parts[2]))
-            if group_id in seen_groups:
+            if group_id in self._seen_group_urls:
                 return None
             try:
                 group = await client.get_tournament_round_group(*group_id)
-                seen_groups.add(group_id)
+                self._seen_group_urls.add(group_id)
                 return group
             except RateLimitError:
                 print(f"Rate limit hit for group {group_id}. Retrying...")
@@ -943,7 +1186,13 @@ class Round:
         tasks = [fetch_group(url) for url in self.group_urls]
         fetched_groups = await asyncio.gather(*tasks, return_exceptions=True)
 
-        self._groups.extend(filter(None, fetched_groups))
+        if not isinstance(fetched_groups, list):
+            raise ValueError("Invalid input data. Expected a list.")
+        valid_groups: Iterable[Group] = (
+            g for g in fetched_groups if isinstance(g, Group)
+        )
+        self._groups.extend(valid_groups)
+
         return self._groups
 
     @property
@@ -963,6 +1212,21 @@ class Round:
                 "first."
             )
         return self._groups
+
+    def __eq__(self, other: Any) -> bool:
+        """Compare two objects."""
+        if not isinstance(other, Round):
+            return NotImplemented
+        return self.group_urls == other.group_urls and self.players == other.players
+
+    def __hash__(self) -> int:
+        """Generate a hash based on the group URLs and the players."""
+        return hash(
+            (
+                tuple(self.group_urls),
+                tuple(frozenset(player.items()) for player in self.players),
+            )
+        )
 
 
 @dataclass
@@ -1004,13 +1268,13 @@ class Tournament:
     creator: str
     status: str
     finish_time: Optional[int]
-    settings: Dict
-    players: List[Dict]
+    settings: Dict[str, Any]
+    players: List[Dict[str, str]]
     round_urls: List[str]
-    _rounds: Optional[List[Round]] = field(default=None, init=False, repr=False)
+    _rounds: List[Round] = field(default_factory=list, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Tournament":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Tournament":
         """Create a `Tournament` instance from a dictionary.
 
         This method constructs a `Tournament` instance by extracting necessary data
@@ -1033,6 +1297,8 @@ class Tournament:
         :return: A `Tournament` class instance created from the `data` dictionary.
         :rtype: Tournament
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             url=data["url"],
@@ -1056,16 +1322,15 @@ class Tournament:
         :return: A list of fetched rounds.
         :rtype: List[Round]
         """
-        self._rounds = self._rounds or []
         seen_rounds = set(self._rounds)
 
-        async def fetch_round(round_url):
+        async def fetch_round(round_url: str) -> Optional[Round]:
             round_id = (round_url.split("/")[-2], int(round_url.split("/")[-1]))
             if round_id in seen_rounds:
                 return None
             try:
                 round_obj = await client.get_tournament_round(*round_id)
-                seen_rounds.add(round_id)
+                seen_rounds.add(round_obj)
                 return round_obj
             except RateLimitError:
                 print(f"Rate limit hit for round {round_id}. Retrying...")
@@ -1077,8 +1342,10 @@ class Tournament:
 
         tasks = [fetch_round(url) for url in self.round_urls]
         fetched_rounds = await asyncio.gather(*tasks, return_exceptions=True)
-
-        self._rounds.extend(filter(None, fetched_rounds))
+        filtered_rounds: List[Optional[Round]] = [
+            r if isinstance(r, Round) else None for r in fetched_rounds
+        ]
+        self._rounds.extend(filter(None, filtered_rounds))
         return self._rounds
 
     @property
@@ -1118,11 +1385,11 @@ class BoardGame(Game):
     :type black: Optional[Black]
     """
 
-    white: Optional[White] = field(default=None, init=False)
-    black: Optional[Black] = field(default=None, init=False)
+    white: Optional[White] = field(default=None, init=False)  # type: ignore
+    black: Optional[Black] = field(default=None, init=False)  # type: ignore
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "BoardGame":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "BoardGame":
         """Create a BoardGame instance from a dictionary.
 
         The method instantiates a BoardGame object based on the data
@@ -1136,22 +1403,28 @@ class BoardGame(Game):
         :rtype: BoardGame
         """
         # Create the base instance
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         instance = cls(
             white_url=data["white"]["@id"],  # Parent field
             black_url=data["black"]["@id"],  # Parent field
             url=data["url"],
             fen=data["fen"],
-            pgn=data["pgn"],
             time_control=data["time_control"],
             time_class=data["time_class"],
             rules=data["rules"],
-            rated=data.get("rated", True),
+            rated=data.get("rated", False),
             accuracies=data.get("accuracies"),
             tournament=data.get("tournament"),
             match=data.get("match"),
             eco=data.get("eco"),
             start_time=data.get("start_time"),
             end_time=data.get("end_time"),
+            id=int(data["url"].split("/")[-1]),
+            pgn=data.get("pgn"),
+            tcn=data.get("tcn"),
+            initial_setup=data.get("initial_setup"),
+            uuid=data.get("uuid"),
         )
 
         # Set computed fields
@@ -1159,6 +1432,36 @@ class BoardGame(Game):
         instance.black = Black.from_dict(data["black"])
 
         return instance
+
+    def __eq__(self, other: Any) -> bool:
+        """Check equality based on game attributes."""
+        if not isinstance(other, Game):
+            return NotImplemented
+        return (
+            self.url == other.url
+            and self.white_url == other.white_url
+            and self.black_url == other.black_url
+            and self.fen == other.fen
+            and self.pgn == other.pgn
+            and self.time_control == other.time_control
+            and self.time_class == other.time_class
+            and self.id == other.id
+        )
+
+    def __hash__(self) -> int:
+        """Generate a hash based on game attributes."""
+        return hash(
+            (
+                self.url,
+                self.white_url,
+                self.black_url,
+                self.fen,
+                self.pgn,
+                self.time_control,
+                self.time_class,
+                self.id,
+            )
+        )
 
 
 @dataclass
@@ -1175,11 +1478,11 @@ class Board:
     :type games: List[BoardGame]
     """
 
-    board_scores: Dict
+    board_scores: Dict[str, int]
     games: List[BoardGame]
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Board":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Board":
         """Create a `Board` instance from a dictionary representation.
 
         :param data: The dictionary containing board
@@ -1188,6 +1491,8 @@ class Board:
         :return: A `Board` instance created from the given dictionary.
         :rtype: Board
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             board_scores=data["board_scores"],
             games=[BoardGame.from_dict(board_game) for board_game in data["games"]],
@@ -1211,7 +1516,7 @@ class MatchResult:
     played_as_black: Optional[str]
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "MatchResult":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "MatchResult":
         """Create a `MatchResult` instance from a dictionary.
 
         This method extracts the relevant information from the provided dictionary to
@@ -1222,6 +1527,8 @@ class MatchResult:
         :return: An instance of `MatchResult`.
         :rtype: MatchResult
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             played_as_white=data.get("played_as_white", None),
             played_as_black=data.get("played_as_black", None),
@@ -1264,7 +1571,9 @@ class FinishedPlayerMatch:
     _board: Optional[Board] = field(default=None, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "FinishedPlayerMatch":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "FinishedPlayerMatch":
         """Create a FinishedPlayerMatch instance from a dictionary.
 
         This class method takes a dictionary representing a finished player match and
@@ -1276,6 +1585,8 @@ class FinishedPlayerMatch:
         :return: A FinishedPlayerMatch instance created from the provided dictionary.
         :rtype: FinishedPlayerMatch
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             url=data["url"],
@@ -1389,7 +1700,9 @@ class InProgressPlayerMatch:
     _board: Optional[Board] = field(default=None, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "InProgressPlayerMatch":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "InProgressPlayerMatch":
         """Create an instance of InProgressPlayerMatch from a dictionary.
 
         This method constructs an object of InProgressPlayerMatch using the
@@ -1406,6 +1719,8 @@ class InProgressPlayerMatch:
             - board: The URL of the player's board (str).
         :return: An instance of InProgressPlayerMatch.
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             url=data["url"],
@@ -1519,7 +1834,9 @@ class RegisteredPlayerMatch:
     _match: Optional[Match] = field(default=None, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data) -> "RegisteredPlayerMatch":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "RegisteredPlayerMatch":
         """Create a RegisteredPlayerMatch instance from a dictionary.
 
         :param data: Dictionary containing the data to
@@ -1528,6 +1845,8 @@ class RegisteredPlayerMatch:
         :return: A new instance of RegisteredPlayerMatch.
         :rtype: RegisteredPlayerMatch
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             url=data["url"],
@@ -1630,7 +1949,7 @@ class PlayerMatches:
     registered: List[RegisteredPlayerMatch]
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "PlayerMatches":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "PlayerMatches":
         """Create a PlayerMatches instance from a dictionary.
 
         :param data: Dictionary containing match information. The dictionary should have
@@ -1641,6 +1960,8 @@ class PlayerMatches:
             InProgressPlayerMatch, and RegisteredPlayerMatch.
         :rtype: PlayerMatches
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             finished=[
                 FinishedPlayerMatch.from_dict(finished_player_match)
@@ -1697,7 +2018,9 @@ class FinishedPlayerTournament:
     total_players: int
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "FinishedPlayerTournament":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "FinishedPlayerTournament":
         """Construct a FinishedPlayerTournament instance from a dictionary.
 
         :param data: Dictionary containing tournament details.
@@ -1705,6 +2028,8 @@ class FinishedPlayerTournament:
         :return: Instantiated FinishedPlayerTournament object.
         :rtype: FinishedPlayerTournament
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             url=data["url"],
             tournament_url=data["@id"],
@@ -1785,7 +2110,9 @@ class InProgressPlayerTournament:
     total_players: int
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "InProgressPlayerTournament":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "InProgressPlayerTournament":
         """Convert a dictionary to an InProgressPlayerTournament instance.
 
         :param data: The dictionary containing tournament details.
@@ -1793,6 +2120,8 @@ class InProgressPlayerTournament:
         :return: An instance of InProgressPlayerTournament based on the dictionary data.
         :rtype: InProgressPlayerTournament
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             url=data["url"],
             tournament_url=data["@id"],
@@ -1866,7 +2195,9 @@ class RegisteredPlayerTournament:
     status: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "RegisteredPlayerTournament":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "RegisteredPlayerTournament":
         """Convert a dictionary to a RegisteredPlayerTournament object.
 
         This class method takes a dictionary containing the keys 'url', '@id',
@@ -1878,6 +2209,8 @@ class RegisteredPlayerTournament:
         :return: RegisteredPlayerTournament object instantiated with the provided data.
         :rtype: RegisteredPlayerTournament
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(url=data["url"], tournament_url=data["@id"], status=data["status"])
 
     async def fetch_tournament(self, client: ChessComClient) -> "Tournament":
@@ -1934,7 +2267,7 @@ class PlayerTournaments:
     registered: List[RegisteredPlayerTournament]
 
     @classmethod
-    def from_dict(cls, data) -> "PlayerTournaments":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "PlayerTournaments":
         """Create a PlayerTournaments instance from a dictionary.
 
         :param data: Data dictionary containing information about player's tournaments.
@@ -1942,6 +2275,8 @@ class PlayerTournaments:
         :return: A new instance of PlayerTournaments.
         :rtype: PlayerTournaments
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             finished=[
                 FinishedPlayerTournament.from_dict(finished_player_tournament)
@@ -1995,7 +2330,7 @@ class FinishedClubMatch:
     result: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "FinishedClubMatch":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "FinishedClubMatch":
         """Create an instance of FinishedClubMatch from a dictionary.
 
         This method constructs an instance of the FinishedClubMatch class using
@@ -2008,6 +2343,8 @@ class FinishedClubMatch:
         :return: An instance of the FinishedClubMatch class.
         :rtype: FinishedClubMatch
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             match_url=data["@id"],
@@ -2124,7 +2461,9 @@ class InProgressClubMatch:
     time_class: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "InProgressClubMatch":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "InProgressClubMatch":
         """Create an instance of InProgressClubMatch from a dictionary.
 
         :param data: Dictionary containing match details.
@@ -2132,6 +2471,8 @@ class InProgressClubMatch:
         :return: Instance of InProgressClubMatch.
         :rtype: InProgressClubMatch
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             match_url=data["@id"],
@@ -2239,7 +2580,9 @@ class RegisteredClubMatch:
     time_class: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "RegisteredClubMatch":
+    def from_dict(
+        cls, data: Union[Dict[str, Any], bytes, None]
+    ) -> "RegisteredClubMatch":
         """Create an instance of RegisteredClubMatch from a dictionary.
 
         :param data: Dictionary containing match information. Expected keys are
@@ -2248,6 +2591,8 @@ class RegisteredClubMatch:
         :return: Instance of RegisteredClubMatch.
         :rtype: RegisteredClubMatch
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             name=data["name"],
             match_url=data["@id"],
@@ -2351,7 +2696,7 @@ class ClubMatches:
     registered: List[RegisteredClubMatch]
 
     @classmethod
-    def from_dict(cls, data) -> "ClubMatches":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "ClubMatches":
         """Create a `ClubMatches` instance from a dictionary.
 
         :param data: A dictionary containing the club matches data with keys 'finished',
@@ -2360,6 +2705,8 @@ class ClubMatches:
         :return: An instance of `ClubMatches` initialized with parsed match data.
         :rtype: ClubMatches
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             finished=[
                 FinishedClubMatch.from_dict(finished_club_match)
@@ -2416,14 +2763,17 @@ class Match:
     end_time: Optional[int]
     status: str
     board_count: int
-    _boards: Optional[List[Board]] = field(default=None, init=False, repr=False)
+    _boards: Optional[List[Union[Board, BaseException, None]]] = field(
+        default=None, init=False, repr=False
+    )
     # TODO: Implement dataclass for settings
-    settings: Dict
+    settings: Dict[str, Any]
     # TODO: Implement dataclass for teams
-    teams: Dict
+    teams: Dict[str, Any]
+    _seen_board_ids: Set[int] = field(default_factory=set, init=False, repr=False)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Match":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Match":
         """Create a Match instance from a dictionary.
 
         This method extracts relevant information from a dictionary
@@ -2434,6 +2784,8 @@ class Match:
         :return: A new instance of Match created from the given dictionary.
         :rtype: Match
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             match_url=data["@id"],
             name=data["name"],
@@ -2460,16 +2812,16 @@ class Match:
         :rtype: List[Board]
         """
         self._boards = self._boards or []
-        seen_boards = set(self._boards)
+        seen_board_ids = self._seen_board_ids or set()
 
-        async def fetch_board(board_num):
-            if board_num in seen_boards:
+        async def fetch_board(board_num: int) -> Optional[Board]:
+            if board_num in seen_board_ids:
                 return None
             try:
                 board = await client.get_match_board(
                     match_id=int(self.match_url.split("/")[-1]), board_num=board_num
                 )
-                seen_boards.add(board_num)
+                seen_board_ids.add(board_num)
                 return board
             except RateLimitError:
                 print(f"Rate limit hit for board {board_num}. Retrying...")
@@ -2482,11 +2834,16 @@ class Match:
         tasks = [fetch_board(i) for i in range(1, self.board_count + 1)]
         fetched_boards = await asyncio.gather(*tasks, return_exceptions=True)
 
-        self._boards.extend(filter(None, fetched_boards))
-        return self._boards
+        self._boards.extend(
+            filter(
+                lambda x: isinstance(x, Board) and not isinstance(x, BaseException),
+                fetched_boards,
+            )
+        )
+        return [board for board in self._boards if isinstance(board, Board)]
 
     @property
-    def boards(self) -> "List[Board]":
+    def boards(self) -> "Optional[List[Union[Board, BaseException, None]]]":
         """Get the list of boards.
 
         Raises a ValueError if boards have not been fetched.
@@ -2495,7 +2852,7 @@ class Match:
         :return: List of boards.
         :rtype: List[Board]
         """
-        if self._boards is None:
+        if self._boards is None or not isinstance(self._boards, list):
             raise ValueError(
                 "Boards have not been fetched. Call `fetch_boards` with an API client "
                 "first."
@@ -2521,7 +2878,7 @@ class Country:
     name: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Country":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Country":
         """Convert a dictionary to a Country object.
 
         :param data: Dictionary containing country data.
@@ -2529,6 +2886,8 @@ class Country:
         :return: Instance of Country.
         :rtype: Country
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(code=data["code"], name=data["name"])
 
 
@@ -2562,7 +2921,7 @@ class DailyPuzzle:
     image: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "DailyPuzzle":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "DailyPuzzle":
         """Create a DailyPuzzle instance from a dictionary.
 
         :param data: Dictionary containing the puzzle data.
@@ -2570,6 +2929,8 @@ class DailyPuzzle:
         :return: An instance of DailyPuzzle.
         :rtype: DailyPuzzle
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             title=data["title"],
             url=data["url"],
@@ -2612,10 +2973,10 @@ class Streamer:
     url: str
     is_live: bool
     is_community_streamer: bool
-    platforms: List[Dict]
+    platforms: List[Dict[str, Any]]
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Streamer":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Streamer":
         """Create a Streamer object from a dictionary.
 
         This method allows you to create an instance of the Streamer class using a
@@ -2630,6 +2991,8 @@ class Streamer:
         :return: New instance of Streamer class created from the given dictionary.
         :rtype: Streamer
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             username=data["username"],
             avatar=data.get("avatar", ""),
@@ -2679,7 +3042,7 @@ class LeaderboardEntry:
     url: str
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "LeaderboardEntry":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "LeaderboardEntry":
         """Create a LeaderboardEntry instance from a dictionary.
 
         :param data: A dictionary containing leaderboard entry data. The keys of the
@@ -2688,6 +3051,8 @@ class LeaderboardEntry:
         :return: An instance of `LeaderboardEntry` created from the provided dictionary.
         :rtype: LeaderboardEntry
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             player_id=data["player_id"],
             username=data["username"],
@@ -2747,7 +3112,7 @@ class Leaderboard:
     tactics: List[LeaderboardEntry]
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Leaderboard":
+    def from_dict(cls, data: Union[Dict[str, Any], bytes, None]) -> "Leaderboard":
         """Create a Leaderboard instance from a dictionary.
 
         This class method parses a dictionary to create an instance of the Leaderboard
@@ -2758,6 +3123,8 @@ class Leaderboard:
         :return: An instance of the Leaderboard class.
         :rtype: Leaderboard
         """
+        if not isinstance(data, dict):
+            raise ValueError("Invalid input data. Expected a dictionary.")
         return cls(
             daily=[
                 LeaderboardEntry.from_dict(entry) for entry in data.get("daily", [])
