@@ -26,22 +26,15 @@ from chess_com_api.models import (
 
 
 def get_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
-    """Compute the hash of a file.
-
-    Args:
-        file_path (str): Path to the file.
-        hash_algorithm (str): Hash algorithm to use ('md5', 'sha1', 'sha256', etc.).
-
-    Returns:
-        str: Hexadecimal hash string of the file.
-
-    """
+    """Compute the hash of a file with normalized line endings."""
     # Create a hash object
     hash_func = getattr(hashlib, hash_algorithm)()
 
-    # Read the file in chunks to handle large files
+    # Read the file in binary mode
     with open(file_path, "rb") as f:
         while chunk := f.read(8192):  # Read in 8KB chunks
+            # Normalize line endings
+            chunk = chunk.replace(b"\r\n", b"\n")  # Convert CRLF to LF
             hash_func.update(chunk)
 
     return hash_func.hexdigest()  # type: ignore
@@ -206,6 +199,64 @@ class TestPlayerGameArchive:
         )
         assert isinstance(game, Game)
         assert game.url == "https://www.chess.com/game/live/1687076816"
+
+    async def test_download_game_pgn(self, client: ChessComClient) -> None:
+        """Test downloading game PGN."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="https://www.chess.com/game/live/116396973087",
+            file_name="test_pgn.pgn",
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
+        )
+        os.remove("test_pgn.pgn")
+
+    async def test_download_game_pgn_with_month(self, client: ChessComClient) -> None:
+        """Test downloading game PGN with month."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="116396973087",
+            file_name="test_pgn.pgn",
+            month="08",
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
+        )
+        os.remove("test_pgn.pgn")
+
+    async def test_download_game_pgn_with_year(self, client: ChessComClient) -> None:
+        """Test downloading game PGN with year."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="116396973087",
+            file_name="test_pgn.pgn",
+            year=2024,
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
+        )
+        os.remove("test_pgn.pgn")
+
+    async def test_download_game_pgn_with_month_and_year(
+        self, client: ChessComClient
+    ) -> None:
+        """Test downloading game PGN with month and year."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="116396973087",
+            file_name="test_pgn.pgn",
+            month="08",
+            year=2024,
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
+        )
+        os.remove("test_pgn.pgn")
 
 
 @pytest.mark.asyncio
