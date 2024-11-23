@@ -207,6 +207,64 @@ class TestPlayerGameArchive:
         assert isinstance(game, Game)
         assert game.url == "https://www.chess.com/game/live/1687076816"
 
+    async def test_download_game_pgn(self, client: ChessComClient) -> None:
+        """Test downloading game PGN."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="https://www.chess.com/game/live/116396973087",
+            file_name="test_pgn.pgn",
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+        )
+        os.remove("test_pgn.pgn")
+
+    async def test_download_game_pgn_with_month(self, client: ChessComClient) -> None:
+        """Test downloading game PGN with month."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="116396973087",
+            file_name="test_pgn.pgn",
+            month="08",
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+        )
+        os.remove("test_pgn.pgn")
+
+    async def test_download_game_pgn_with_year(self, client: ChessComClient) -> None:
+        """Test downloading game PGN with year."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="116396973087",
+            file_name="test_pgn.pgn",
+            year=2024,
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+        )
+        os.remove("test_pgn.pgn")
+
+    async def test_download_game_pgn_with_month_and_year(
+        self, client: ChessComClient
+    ) -> None:
+        """Test downloading game PGN with month and year."""
+        await client.download_game_pgn(
+            username="erik",
+            game_id="116396973087",
+            file_name="test_pgn.pgn",
+            month="08",
+            year=2024,
+        )
+        assert (
+            get_file_hash("test_pgn.pgn")
+            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+        )
+        os.remove("test_pgn.pgn")
+
 
 @pytest.mark.asyncio
 async def test_get_archived_games(client: ChessComClient) -> None:

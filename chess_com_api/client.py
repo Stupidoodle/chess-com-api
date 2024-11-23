@@ -260,6 +260,23 @@ class ChessComClient:
             client=self, game_id=game_id, year=year, month=month
         )
 
+    async def download_game_pgn(
+        self,
+        username: str,
+        game_id: Union[str, int],
+        file_name: str,
+        year: Optional[int] = None,
+        month: Optional[str] = None,
+    ) -> None:
+        """Download player's game PGN."""
+        game = await self.get_game(username, game_id, year, month)
+        if not isinstance(game, Game):
+            raise ChessComAPIError("Unexpected response from /player/games endpoint")
+        if not isinstance(game.pgn, str):
+            raise ChessComAPIError("No PGN data found in game")
+        with open(file_name, "w") as f:
+            f.write(game.pgn)
+
     async def get_player_clubs(self, username: str) -> List[UserClub]:
         """Get player's clubs."""
         data = await self._make_request(f"/player/{username}/clubs")
