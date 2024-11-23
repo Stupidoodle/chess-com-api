@@ -5,7 +5,7 @@ from datetime import datetime
 from chess_com_api.utils import format_timestamp
 
 
-def test_format_timestamp():
+def test_format_timestamp() -> None:
     """Test the `format_timestamp` function.
 
     This function verifies the behavior of `format_timestamp` by checking whether it

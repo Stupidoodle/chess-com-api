@@ -1,6 +1,7 @@
 """Integration tests for the Chess.com API client."""
 
 import asyncio
+from typing import Any, AsyncGenerator
 from unittest.mock import AsyncMock
 
 import aiohttp
@@ -12,7 +13,7 @@ from chess_com_api.models import ClubMatches, Country
 
 
 @pytest.fixture
-async def client():
+async def client() -> AsyncGenerator[ChessComClient, None]:
     """Create and yield an asynchronous ChessComClient fixture.
 
     This fixture is used to manage the lifecycle of a ChessComClient instance,
@@ -26,7 +27,7 @@ async def client():
 
 
 @pytest.mark.asyncio
-async def test_client_fixture(client):
+async def test_client_fixture(client: ChessComClient) -> None:
     """Test the client fixture for proper instantiation.
 
     This test verifies that the client fixture is correctly set up and returns an
@@ -53,7 +54,7 @@ class TestPlayerEndpoints:
     :type client: APIClient
     """
 
-    async def test_get_player(self, client):
+    async def test_get_player(self, client: ChessComClient) -> None:
         """Test getting player profile."""
         player = await client.get_player("hikaru")
         assert player.username == "hikaru"
@@ -61,13 +62,13 @@ class TestPlayerEndpoints:
         await player.fetch_country(client=client)
         assert player.country == Country(code="US", name="United States")
 
-    async def test_get_player_stats(self, client):
+    async def test_get_player_stats(self, client: ChessComClient) -> None:
         """Test getting player statistics."""
         stats = await client.get_player_stats("hikaru")
         assert stats.chess_blitz is not None
         assert "rating" in stats.chess_blitz["last"]
 
-    async def test_player_games(self, client):
+    async def test_player_games(self, client: ChessComClient) -> None:
         """Test getting player games."""
         games = await client.get_player_current_games("erik")
         for game in games:
@@ -89,20 +90,20 @@ class TestClubEndpoints:
     :type attribute2: type
     """
 
-    async def test_get_club(self, client):
+    async def test_get_club(self, client: ChessComClient) -> None:
         """Test getting club details."""
         club = await client.get_club("chess-com-developer-community")
         assert club.name is not None
         assert club.members_count > 0
 
-    async def test_club_members(self, client):
+    async def test_club_members(self, client: ChessComClient) -> None:
         """Test getting club members."""
         members = await client.get_club_members("team-usa")
         assert "weekly" in members
         assert "monthly" in members
         assert "all_time" in members
 
-    async def test_club_matches(self, client):
+    async def test_club_matches(self, client: ChessComClient) -> None:
         """Test getting club matches."""
         matches = await client.get_club_matches("chess-com-developer-community")
         assert isinstance(matches, ClubMatches)
@@ -134,13 +135,13 @@ class TestCountryEndpoints:
 
     """
 
-    async def test_get_country(self, client):
+    async def test_get_country(self, client: ChessComClient) -> None:
         """Test getting country details."""
         country = await client.get_country("US")
         assert country.name == "United States"
         assert country.code == "US"
 
-    async def test_country_players(self, client):
+    async def test_country_players(self, client: ChessComClient) -> None:
         """Test getting country players."""
         players = await client.get_country_players("US")
         assert isinstance(players, list)
@@ -158,14 +159,14 @@ class TestPuzzleEndpoints:
     :type client: Any
     """
 
-    async def test_daily_puzzle(self, client):
+    async def test_daily_puzzle(self, client: ChessComClient) -> None:
         """Test getting daily puzzle."""
         puzzle = await client.get_daily_puzzle()
         assert puzzle.title is not None
         assert puzzle.pgn is not None
         assert puzzle.fen is not None
 
-    async def test_random_puzzle(self, client):
+    async def test_random_puzzle(self, client: ChessComClient) -> None:
         """Test getting random puzzle."""
         puzzle = await client.get_random_puzzle()
         assert puzzle.title is not None
@@ -183,7 +184,7 @@ class TestStreamersEndpoint:
     :type client: HttpClient
     """
 
-    async def test_get_streamers(self, client):
+    async def test_get_streamers(self, client: ChessComClient) -> None:
         """Test getting Chess.com streamers."""
         streamers = await client.get_streamers()
         for streamer in streamers:
@@ -203,7 +204,7 @@ class TestLeaderboardsEndpoint:
     :type client: TestClient
     """
 
-    async def test_get_leaderboards(self, client):
+    async def test_get_leaderboards(self, client: ChessComClient) -> None:
         """Test getting leaderboards."""
         leaderboards = await client.get_leaderboards()
         assert len(leaderboards.daily) > 0
@@ -220,13 +221,12 @@ class TestErrorHandling:
     validation errors.
     """
 
-    async def test_not_found(self, client):
+    async def test_not_found(self, client: ChessComClient) -> None:
         """Test 404 error handling."""
         with pytest.raises(NotFoundError):
             await client.get_player("thisisnotarealuser12345")
 
-    @pytest.mark.asyncio
-    async def test_rate_limit(self, client, monkeypatch):
+    async def test_rate_limit(self, client: ChessComClient, monkeypatch: Any) -> None:
         """Test rate limit handling."""
         mock_request = AsyncMock(side_effect=RateLimitError("Rate limit exceeded"))
         monkeypatch.setattr(client, "_make_request", mock_request)
@@ -236,7 +236,7 @@ class TestErrorHandling:
 
         assert any(isinstance(r, RateLimitError) for r in results)
 
-    async def test_invalid_input(self, client):
+    async def test_invalid_input(self, client: ChessComClient) -> None:
         """Test input validation."""
         with pytest.raises(ValueError):
             await client.get_player("")
@@ -251,7 +251,7 @@ class TestRetryMechanism:
     number of retries is exceeded.
     """
 
-    async def test_retry_success(self, client, mocker):
+    async def test_retry_success(self, client: ChessComClient, mocker: Any) -> None:
         """Test successful retry after failure."""
         # Mock the `get` method to fail once and succeed on the second attempt
         mock_response = AsyncMock()
@@ -288,7 +288,9 @@ class TestRetryMechanism:
         result = await client.get_player("hikaru")
         assert result.username == "hikaru"
 
-    async def test_max_retries_exceeded(self, client, mocker):
+    async def test_max_retries_exceeded(
+        self, client: ChessComClient, mocker: Any
+    ) -> None:
         """Test max retries exceeded."""
         mocker.patch.object(client.session, "get", side_effect=aiohttp.ClientError())
 
@@ -304,7 +306,7 @@ class TestContextManager:
     initializes and provides access to client methods within an asynchronous context.
     """
 
-    async def test_context_manager(self):
+    async def test_context_manager(self) -> None:
         """Test client context manager."""
         async with ChessComClient() as client:
             player = await client.get_player("hikaru")

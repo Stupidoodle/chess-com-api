@@ -4,23 +4,28 @@ import asyncio
 import hashlib
 import os
 from datetime import datetime
+from typing import AsyncGenerator
 
 import pytest
 
 from chess_com_api.client import ChessComClient
 from chess_com_api.exceptions import NotFoundError
 from chess_com_api.models import (
+    Black,
+    Board,
     BoardGame,
     Club,
     Game,
+    GameArchive,
     Group,
     PlayerMatches,
     PlayerTournaments,
     Round,
+    White,
 )
 
 
-def get_file_hash(file_path, hash_algorithm="sha256"):
+def get_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
     """Compute the hash of a file.
 
     Args:
@@ -39,18 +44,18 @@ def get_file_hash(file_path, hash_algorithm="sha256"):
         while chunk := f.read(8192):  # Read in 8KB chunks
             hash_func.update(chunk)
 
-    return hash_func.hexdigest()
+    return hash_func.hexdigest()  # type: ignore
 
 
 @pytest.fixture
-async def client():
+async def client() -> AsyncGenerator[ChessComClient, None]:
     """Create test client instance."""
     async with ChessComClient(max_retries=50) as client:
         yield client
 
 
 @pytest.mark.asyncio
-async def test_get_player(client):
+async def test_get_player(client: ChessComClient) -> None:
     """Test getting player profile."""
     player = await client.get_player("hikaru")
     assert player.username == "hikaru"
@@ -59,7 +64,7 @@ async def test_get_player(client):
 
 
 @pytest.mark.asyncio
-async def test_get_titled_players(client):
+async def test_get_titled_players(client: ChessComClient) -> None:
     """Test getting player profiles with title."""
     players = await client.get_titled_players("GM")
     assert isinstance(players, list)
@@ -67,7 +72,7 @@ async def test_get_titled_players(client):
 
 
 @pytest.mark.asyncio
-async def test_get_player_to_move_games(client):
+async def test_get_player_to_move_games(client: ChessComClient) -> None:
     """Test getting player's to move games."""
     games = await client.get_player_to_move_games("erik")
     assert isinstance(games, list)
@@ -75,7 +80,7 @@ async def test_get_player_to_move_games(client):
 
 
 @pytest.mark.asyncio
-async def test_get_player_stats(client):
+async def test_get_player_stats(client: ChessComClient) -> None:
     """Test getting player statistics."""
     stats = await client.get_player_stats("hikaru")
     assert stats.chess_blitz is not None
@@ -83,7 +88,7 @@ async def test_get_player_stats(client):
 
 
 @pytest.mark.asyncio
-async def test_download_monthly_pgn(client):
+async def test_download_monthly_pgn(client: ChessComClient) -> None:
     """Test downloading monthly PGN."""
     await client.download_archived_games_pgn("test_file.pgn", "erik", 2009, 10)
     print(get_file_hash("test_file.pgn"))
@@ -95,7 +100,7 @@ async def test_download_monthly_pgn(client):
 
 
 @pytest.mark.asyncio
-async def test_get_player_matches(client):
+async def test_get_player_matches(client: ChessComClient) -> None:
     """Test getting player matches."""
     matches = await client.get_player_matches("erik")
     assert isinstance(matches, PlayerMatches)
@@ -107,6 +112,16 @@ async def test_get_player_matches(client):
     assert matches.in_progress[0].club.name is not None
     await matches.finished[0].fetch_board(client=client)
     await matches.in_progress[0].fetch_board(client=client)
+    assert isinstance(matches.finished[0].board, Board)
+    assert isinstance(matches.in_progress[0].board, Board)
+    assert len(matches.finished[0].board.games) > 0
+    assert len(matches.in_progress[0].board.games) > 0
+    assert isinstance(matches.finished[0].board.games[0], BoardGame)
+    assert isinstance(matches.in_progress[0].board.games[0], BoardGame)
+    assert isinstance(matches.finished[0].board.games[0].white, White)
+    assert isinstance(matches.finished[0].board.games[0].black, Black)
+    assert isinstance(matches.in_progress[0].board.games[0].white, White)
+    assert isinstance(matches.in_progress[0].board.games[0].black, Black)
     assert matches.finished[0].board.games[0].white.username == "erik"
     assert matches.finished[0].board.games[0].black.username == "Remchess69"
     assert matches.in_progress[0].board.games[0].white.username == "erik"
@@ -117,7 +132,7 @@ async def test_get_player_matches(client):
 
 
 @pytest.mark.asyncio
-async def test_get_player_tournaments(client):
+async def test_get_player_tournaments(client: ChessComClient) -> None:
     """Test getting player tournaments."""
     tournaments = await client.get_player_tournaments("erik")
     assert isinstance(tournaments, PlayerTournaments)
@@ -133,7 +148,7 @@ async def test_get_player_tournaments(client):
 
 
 @pytest.mark.asyncio
-async def test_get_player_current_games(client):
+async def test_get_player_current_games(client: ChessComClient) -> None:
     """Test getting player's current games."""
     games = await client.get_player_current_games("erik")
     assert isinstance(games, list)
@@ -142,24 +157,68 @@ async def test_get_player_current_games(client):
 
 
 @pytest.mark.asyncio
-async def test_get_player_game_archives(client):
+async def test_get_player_game_archives(client: ChessComClient) -> None:
     """Test getting player's game archives."""
     archives = await client.get_player_game_archives("hikaru")
-    assert isinstance(archives, list)
-    assert len(archives) > 0
+    assert isinstance(archives, GameArchive)
+    assert len(archives.archive_urls) > 0
 
 
 @pytest.mark.asyncio
-async def test_get_archived_games(client):
+class TestPlayerGameArchive:
+    """Test player game archive."""
+
+    async def test_get_game(self, client: ChessComClient) -> None:
+        """Test getting game from URL."""
+        game = await client.get_game(
+            username="erik", game_id="https://www.chess.com/game/live/1687076816"
+        )
+        assert isinstance(game, Game)
+        assert game.url == "https://www.chess.com/game/live/1687076816"
+
+    async def test_get_game_with_month(self, client: ChessComClient) -> None:
+        """Test getting game from URL with month."""
+        game = await client.get_game(
+            username="erik",
+            game_id="1687076816",
+            month="08",
+        )
+        assert isinstance(game, Game)
+        assert game.url == "https://www.chess.com/game/live/1687076816"
+
+    async def test_get_game_with_year(self, client: ChessComClient) -> None:
+        """Test getting game from URL with year."""
+        game = await client.get_game(
+            username="erik",
+            game_id="1687076816",
+            year=2016,
+        )
+        assert isinstance(game, Game)
+        assert game.url == "https://www.chess.com/game/live/1687076816"
+
+    async def test_get_game_with_month_and_year(self, client: ChessComClient) -> None:
+        """Test getting game from URL with month and year."""
+        game = await client.get_game(
+            username="erik",
+            game_id="1687076816",
+            month="08",
+            year=2016,
+        )
+        assert isinstance(game, Game)
+        assert game.url == "https://www.chess.com/game/live/1687076816"
+
+
+@pytest.mark.asyncio
+async def test_get_archived_games(client: ChessComClient) -> None:
     """Test getting player's archived games."""
-    games = await client.get_archived_games("hikaru", 2023, 12)
+    games = await client.get_archived_games("hikaru", 2023, "12")
     assert isinstance(games, list)
     if games:
         assert all(hasattr(g, "url") for g in games)
 
 
 @pytest.mark.asyncio
-async def test_get_player_clubs(client):
+async def test_get_player_clubs(client: ChessComClient) -> None:
     """Test getting player's clubs."""
     clubs = await client.get_player_clubs("erik")
     assert isinstance(clubs, list)
@@ -168,7 +227,7 @@ async def test_get_player_clubs(client):
 
 
 @pytest.mark.asyncio
-async def test_get_club(client):
+async def test_get_club(client: ChessComClient) -> None:
     """Test getting club details."""
     club = await client.get_club("chess-com-developer-community")
     assert club.name is not None
@@ -176,7 +235,7 @@ async def test_get_club(client):
 
 
 @pytest.mark.asyncio
-async def test_get_tournament(client):
+async def test_get_tournament(client: ChessComClient) -> None:
     """Test getting tournament details."""
     tournament = await client.get_tournament("-33rd-chesscom-quick-knockouts-1401-1600")
     assert tournament.name is not None
@@ -187,7 +246,7 @@ async def test_get_tournament(client):
 
 
 @pytest.mark.asyncio
-async def test_tournament_round(client):
+async def test_tournament_round(client: ChessComClient) -> None:
     """Test getting tournament round details."""
     tournament_id = "-33rd-chesscom-quick-knockouts-1401-1600"
     tournament_round = await client.get_tournament_round(tournament_id, 1)
@@ -199,7 +258,7 @@ async def test_tournament_round(client):
 
 
 @pytest.mark.asyncio
-async def test_tournament_round_group(client):
+async def test_tournament_round_group(client: ChessComClient) -> None:
     """Test getting tournament round group details."""
     tournament_id = "-33rd-chesscom-quick-knockouts-1401-1600"
     tournament_round_group = await client.get_tournament_round_group(
@@ -210,14 +269,18 @@ async def test_tournament_round_group(client):
 
 
 @pytest.mark.asyncio
-async def test_get_match(client):
+async def test_get_match(client: ChessComClient) -> None:
     """Test getting match details."""
     match = await client.get_match(12803)
     assert match.url.startswith("https://")
     await match.fetch_boards(client=client)
+    assert isinstance(match.boards, list)
     assert len(match.boards) > 0
+    assert isinstance(match.boards[0], Board)
     assert len(match.boards[0].games) > 0
     assert isinstance(match.boards[0].games[0], Game)
+    assert isinstance(match.boards[0].games[0].white, White)
+    assert isinstance(match.boards[0].games[0].black, Black)
     await match.boards[0].games[0].white.fetch_user(client=client)
     await match.boards[0].games[0].black.fetch_user(client=client)
     assert (
@@ -226,18 +289,20 @@ async def test_get_match(client):
     )
     assert match.boards[0].games[0].white.user == await client.get_player("sorinel")
     assert match.boards[0].games[0].black.user == await client.get_player("Kllr")
-    match.boards[0].games[0].fetch_white(client=client)
-    match.boards[0].games[0].fetch_black(client=client)
+    await match.boards[0].games[0].fetch_white(client=client)
+    await match.boards[0].games[0].fetch_black(client=client)
     assert match.boards[0].games[0].white.user == await client.get_player("sorinel")
     assert match.boards[0].games[0].black.user == await client.get_player("Kllr")
 
 
 @pytest.mark.asyncio
-async def test_get_match_board(client):
+async def test_get_match_board(client: ChessComClient) -> None:
     """Test getting match board."""
     board = await client.get_match_board(12803, 1)
     assert len(board.games) > 0
     assert isinstance(board.games[0], BoardGame)
+    assert isinstance(board.games[0].white, White)
+    assert isinstance(board.games[0].black, Black)
     await board.games[0].white.fetch_user(client=client)
     await board.games[0].black.fetch_user(client=client)
     assert (
@@ -246,21 +311,21 @@ async def test_get_match_board(client):
     )
     assert board.games[0].white.user == await client.get_player("sorinel")
     assert board.games[0].black.user == await client.get_player("Kllr")
-    board.games[0].fetch_white(client=client)
-    board.games[0].fetch_black(client=client)
+    await board.games[0].fetch_white(client=client)
+    await board.games[0].fetch_black(client=client)
     assert board.games[0].white.user == await client.get_player("sorinel")
     assert board.games[0].black.user == await client.get_player("Kllr")
 
 
 @pytest.mark.asyncio
-async def test_get_live_match(client):
+async def test_get_live_match(client: ChessComClient) -> None:
     """Test getting live match details."""
     match = await client.get_live_match("5833")
     assert match.url.startswith("https://")
 
 
 @pytest.mark.asyncio
-async def test_get_live_match_board(client):
+async def test_get_live_match_board(client: ChessComClient) -> None:
     """Test getting live match board."""
     board = await client.get_live_match_board(5833, 5)
     assert len(board.games) > 0
@@ -268,7 +333,7 @@ async def test_get_live_match_board(client):
 
 
 @pytest.mark.asyncio
-async def test_get_country(client):
+async def test_get_country(client: ChessComClient) -> None:
     """Test getting country details."""
     country = await client.get_country("US")
     assert country.name == "United States"
@@ -276,7 +341,7 @@ async def test_get_country(client):
 
 
 @pytest.mark.asyncio
-async def test_get_country_clubs(client):
+async def test_get_country_clubs(client: ChessComClient) -> None:
     """Test getting country clubs."""
     country_clubs = await client.get_country_clubs("TV")
     await country_clubs.fetch_clubs(client=client)
@@ -285,7 +350,7 @@ async def test_get_country_clubs(client):
 
 
 @pytest.mark.asyncio
-async def test_get_daily_puzzle(client):
+async def test_get_daily_puzzle(client: ChessComClient) -> None:
     """Test getting daily puzzle."""
     puzzle = await client.get_daily_puzzle()
     assert puzzle.title is not None
@@ -294,7 +359,7 @@ async def test_get_daily_puzzle(client):
 
 
 @pytest.mark.asyncio
-async def test_get_streamers(client):
+async def test_get_streamers(client: ChessComClient) -> None:
     """Test getting Chess.com streamers."""
     streamers = await client.get_streamers()
     assert isinstance(streamers, list)
@@ -303,7 +368,7 @@ async def test_get_streamers(client):
 
 
 @pytest.mark.asyncio
-async def test_get_leaderboards(client):
+async def test_get_leaderboards(client: ChessComClient) -> None:
     """Test getting leaderboards."""
     leaderboards = await client.get_leaderboards()
     assert hasattr(leaderboards, "daily")
@@ -312,7 +377,7 @@ async def test_get_leaderboards(client):
 
 
 @pytest.mark.asyncio
-async def test_error_handling(client):
+async def test_error_handling(client: ChessComClient) -> None:
     """Test error handling."""
     with pytest.raises(NotFoundError):
         await client.get_player("thisisnotarealuser12345")
@@ -322,7 +387,7 @@ async def test_error_handling(client):
 
 
 @pytest.mark.asyncio
-async def test_rate_limiting(client):
+async def test_rate_limiting(client: ChessComClient) -> None:
     """Test rate limiting functionality."""
     # Make multiple concurrent requests
     tasks = [client.get_player("hikaru") for _ in range(10)]
@@ -332,10 +397,10 @@ async def test_rate_limiting(client):
     assert all(not isinstance(r, Exception) for r in results)
 
 
-def test_client_context_manager():
+def test_client_context_manager() -> None:
     """Test client context manager functionality."""
 
-    async def run():
+    async def run() -> None:
         async with ChessComClient() as client:
             player = await client.get_player("hikaru")
             assert player is not None

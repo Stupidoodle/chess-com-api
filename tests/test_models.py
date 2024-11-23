@@ -5,7 +5,7 @@ from datetime import datetime
 from chess_com_api.models import Game, Player, PlayerStats
 
 
-def test_player_model():
+def test_player_model() -> None:
     """Test Player model."""
     data = {
         "username": "hikaru",
@@ -27,7 +27,7 @@ def test_player_model():
     assert isinstance(player.joined, datetime)
 
 
-def test_player_stats_model():
+def test_player_stats_model() -> None:
     """Test PlayerStats model."""
     data = {
         "chess_daily": {"last": {"rating": 2800, "date": 1234567890, "rd": 50}},
@@ -39,7 +39,7 @@ def test_player_stats_model():
     assert stats.chess_blitz is not None
 
 
-def test_game_model():
+def test_game_model() -> None:
     """Test Game model."""
     data = {
         "white": {
@@ -56,7 +56,7 @@ def test_game_model():
             "@id": "https://api.example.com/pub/player/player2",
             "uuid": "1234567891",
         },
-        "url": "https://example.com/game",
+        "url": "https://example.com/game/18023",
         "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         "pgn": "1. e4 e5",
         "time_control": "300+2",
@@ -65,8 +65,9 @@ def test_game_model():
     }
 
     game = Game.from_dict(data)
-    assert game.url == "https://example.com/game"
+    assert game.url == "https://example.com/game/18023"
     assert game.time_class == "blitz"
+    assert game.id == 18023
 
 
 # Add more model tests...
