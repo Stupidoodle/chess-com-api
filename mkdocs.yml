@@ -92,21 +92,28 @@ nav:
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quickstart.md
       - Authentication: getting-started/authentication.md
+  - Setup:
+      - Migration Guide: setup/migration-guide.md
+      - Performance Guide: setup/performance-guide.md
+      - Production Checklist: setup/production-checklist.md
+      - Project Setup: setup/project-setup.md
+      - Security Guide: setup/security-guide.md
+      - Testing Guide: setup/testing-guide.md
   - User Guide:
       - Basic Usage: user-guide/basic-usage.md
       - Advanced Usage: user-guide/advanced-usage.md
       - Rate Limiting: user-guide/rate-limiting.md
       - Error Handling: user-guide/error-handling.md
+      - FAQ: user-guide/faq.md
   - API Reference:
       - Client: api/client.md
       - Models: api/models.md
       - Exceptions: api/exceptions.md
-      - Utils: api/utils.md
   - Examples:
       - Player Data: examples/player-data.md
       - Game Analysis: examples/game-analysis.md
       - Tournament Integration: examples/tournament-integration.md
-  - Contributing: contributing.md
+  - Contributing: CONTRIBUTING.md
   - Changelog: changelog.md
 
 extra:
