@@ -26,22 +26,15 @@ from chess_com_api.models import (
 
 
 def get_file_hash(file_path: str, hash_algorithm: str = "sha256") -> str:
-    """Compute the hash of a file.
-
-    Args:
-        file_path (str): Path to the file.
-        hash_algorithm (str): Hash algorithm to use ('md5', 'sha1', 'sha256', etc.).
-
-    Returns:
-        str: Hexadecimal hash string of the file.
-
-    """
+    """Compute the hash of a file with normalized line endings."""
     # Create a hash object
     hash_func = getattr(hashlib, hash_algorithm)()
 
-    # Read the file in chunks to handle large files
+    # Read the file in binary mode
     with open(file_path, "rb") as f:
         while chunk := f.read(8192):  # Read in 8KB chunks
+            # Normalize line endings
+            chunk = chunk.replace(b"\r\n", b"\n")  # Convert CRLF to LF
             hash_func.update(chunk)
 
     return hash_func.hexdigest()  # type: ignore
@@ -216,7 +209,7 @@ class TestPlayerGameArchive:
         )
         assert (
             get_file_hash("test_pgn.pgn")
-            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
         )
         os.remove("test_pgn.pgn")
 
@@ -230,7 +223,7 @@ class TestPlayerGameArchive:
         )
         assert (
             get_file_hash("test_pgn.pgn")
-            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
         )
         os.remove("test_pgn.pgn")
 
@@ -244,7 +237,7 @@ class TestPlayerGameArchive:
         )
         assert (
             get_file_hash("test_pgn.pgn")
-            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
         )
         os.remove("test_pgn.pgn")
 
@@ -261,7 +254,7 @@ class TestPlayerGameArchive:
         )
         assert (
             get_file_hash("test_pgn.pgn")
-            == "5938eb2a36c3b06aa82408a1e1827112b405fd0701cfaa0bf2d6998c6bafca35"
+            == "73f3340fa79614c3688b80aad7cec710896680f1da213f5d057d4898ec1f5dc4"
         )
         os.remove("test_pgn.pgn")
 
